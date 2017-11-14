@@ -1,0 +1,112 @@
+ocserv (0.11.9-1build1) bionic; urgency=medium
+
+  * No-change rebuild for http-parser soname change.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 14 Nov 2017 14:00:16 +0000
+
+ocserv (0.11.9-1) unstable; urgency=medium
+
+  * New upstream version 0.11.9
+  * d/control: 
+    - Bump Standards-Version to 4.1.1, no changes needed
+    - Enable geoip option
+    - Remove Build-Depends on dh-systemd 
+  * d/copyright: Refresh for new upstream version
+  * d/patches: Remove following patches, applied upstream:
+    - allow-parallel-build-of-autogen-files.patch
+    - 0001-ocserv-fw-should-still-create-a-chain-if-restrict-us.patch
+    - 0002-ocserv-fw-should-send-all-traffic-to-the-device-spec.patch
+    - 0003-worker-vpn-corrected-calculation-for-MTU-via-TCP-MSS.patch
+    - 0004-worker-vpn-use-TCP_INFO-on-linux-to-obtain-accurate-.patch
+
+ -- Liang Guo <guoliang@debian.org>  Thu, 19 Oct 2017 00:00:09 +0800
+
+ocserv (0.11.6-2) unstable; urgency=medium
+
+  * Cherry pick upstream patches:
+    - 0001-ocserv-fw-should-still-create-a-chain-if-restrict-us.patch
+    - 0002-ocserv-fw-should-send-all-traffic-to-the-device-spec.patch
+    - 0003-worker-vpn-corrected-calculation-for-MTU-via-TCP-MSS.patch
+    - 0004-worker-vpn-use-TCP_INFO-on-linux-to-obtain-accurate-.patch
+
+ -- Aron Xu <aron@debian.org>  Fri, 24 Mar 2017 19:34:20 +0800
+
+ocserv (0.11.6-1) unstable; urgency=medium
+
+  * New upstream version 0.11.6
+  * Fix "Error in the system's randomness device" (Closes: #839937)
+    (LP: #1634617)
+  * d/p/allow-parallel-build-of-autogen-files.patch: Refresh for new upstream
+    version
+  * Update default ocserv.conf from upstream example
+  * Make the build reproducible by setting MAN_PAGE_DATE
+  * Bump debhelper compat level to 10
+  * Run wrap-and-sort on d/control and d/*.install
+  * d/copyright: Refresh for new upstream version
+
+ -- Mike Miller <mtmiller@debian.org>  Tue, 20 Dec 2016 20:27:17 +0800
+
+ocserv (0.11.4-2) unstable; urgency=high
+
+  * d/p/allow-parallel-build-of-autogen-files.patch: Fix parallel build race on
+    autogen files (Closes: 844882)
+  * d/control: Add Depends: lsb-base for ocserv init script
+  * d/README.Debian: Document how to configure listening port (Closes: 837944)
+  * d/p/prevent-parallel-build-of-manpages.patch: Disable parallel build to
+    ensure manpages are built
+  * d/control: Use canonical https URLs for Vcs-*
+  * Bump Standards-Version to 3.9.8, no changes needed
+
+ -- Mike Miller <mtmiller@debian.org>  Sat, 10 Dec 2016 17:12:48 -0800
+
+ocserv (0.11.4-1) unstable; urgency=medium
+
+  * Imported Upstream version 0.11.4
+  * Allow parallel building
+
+ -- Aron Xu <aron@debian.org>  Tue, 16 Aug 2016 19:20:26 +0800
+
+ocserv (0.11.1-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #819124)
+  * Refresh debian/copyright
+  * d/control:
+    - Add libev-dev, nettle-dev and liboauth-dev to B-D
+    - Update B-D on libradcli-dev to higher 1.2.5
+
+ -- Liang Guo <guoliang@debian.org>  Mon, 21 Mar 2016 11:05:07 +0800
+
+ocserv (0.10.11-2) unstable; urgency=medium
+
+  * Use radcli for Radius support (Closes: #813690)
+
+ -- Aron Xu <aron@debian.org>  Fri, 19 Feb 2016 09:18:55 +0800
+
+ocserv (0.10.11-1) unstable; urgency=medium
+
+  * New upstream bug fix release
+  * d/rules:
+    - Disable parallel building
+    - Make use of dh-systemd
+  * d/control:
+    - Use libsystemd-dev (Closes: #813377)
+    - Add libkrb5-dev and liboath-dev to B-D
+    - std-ver: 3,9.6 -> 3.9.7, no change
+    - Add VCS-* fields
+    - Better tune arch list
+  * Update example configuration, ship as default now
+
+ -- Aron Xu <aron@debian.org>  Sat, 06 Feb 2016 03:22:56 +0800
+
+ocserv (0.10.10-1) unstable; urgency=medium
+
+  * New upstream release
+  * Add dbus to Depends (Closes: #807571)
+
+ -- Aron Xu <aron@debian.org>  Tue, 15 Dec 2015 16:36:00 +0800
+
+ocserv (0.10.7-1) unstable; urgency=medium
+
+  * Initial release. (Closes: #742272)
+
+ -- Aron Xu <aron@debian.org>  Sun, 16 Aug 2015 15:52:41 +0800

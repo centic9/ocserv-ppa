@@ -1,0 +1,17 @@
+Using ocserv with systemd socket activation
+-------------------------------------------
+
+By default, ocserv in Debian is configured to use systemd's socket activation
+feature, and listens on the standard https port 443.
+
+To change the port that ocserv listens on, an override file can be
+installed as /etc/systemd/system/ocserv.socket.d/*.conf with contents like
+the following:
+
+    [Socket]
+    ListenStream=
+    ListenDatagram=
+    ListenStream=12345
+    ListenDatagram=12345
+
+For more details, see systemd.unit(5) and systemd.socket(5).

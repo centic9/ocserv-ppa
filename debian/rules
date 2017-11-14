@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# Used by autogen to substitute the source package date into man pages
+export MAN_PAGE_DATE = $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" +%Y-%m-%d)
+
+AUTORECONF_SOURCES = aclocal.m4 configure
+
+BUILT_SOURCES = doc/occtl.8 doc/ocpasswd.8 doc/ocserv.8 \
+		src/ipc.pb-c.c src/ipc.pb-c.h src/version.inc
+
+DEB_BUILD_ARCH_OS = $(dpkg-architecture -qDEB_BUILD_ARCH_OS)
+#ifeq ($(DEB_BUILD_ARCH_OS),linux)
+	OTHER_CONF_OPTS = --enable-systemd --enable-linux-namespaces
+#endif
+
+%:
+	dh $@ --with systemd
+
+override_dh_autoreconf:
+	for f in $(AUTORECONF_SOURCES); do \
+		[ -f $$f.debian-backup ] || mv $$f $$f.debian-backup; \
+	done
+	dh_autoreconf
+
+override_dh_auto_configure:
+	dh_auto_configure -- --disable-rpath --disable-silent-rules \
+	    --without-dbus $(OTHER_CONF_OPTS)
+
+override_dh_auto_build:
+	# Move all upstream generated source files out of the way
+	for f in $(BUILT_SOURCES); do \
+		[ -f $$f.debian-backup ] || mv $$f $$f.debian-backup; \
+	done
+	dh_auto_build
+
+override_dh_auto_clean:
+	dh_auto_clean
+	# Restore original generated source files
+	for f in $(BUILT_SOURCES); do \
+		[ ! -f $$f.debian-backup ] || mv $$f.debian-backup $$f; \
+	done
+	rm -rf src/*-args.c src/*-args.h tests/passwd.out
+
+override_dh_autoreconf_clean:
+	dh_autoreconf_clean
+	for f in $(AUTORECONF_SOURCES); do \
+		[ ! -f $$f.debian-backup ] || mv $$f.debian-backup $$f; \
+	done
+
+override_dh_clean:
+	# The *-args.[ch].bak files are included in the source distribution
+	dh_clean -X args.c.bak -X args.h.bak

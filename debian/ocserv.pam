@@ -1,0 +1,34 @@
+#
+# /etc/pam.d/ocserv - specify the PAM behaviour of ocserv
+#
+
+# Standard Un*x authentication.
+@include common-auth
+
+# Disallow non-root logins when /etc/nologin exists.
+account       required     pam_nologin.so
+
+# Uncomment and edit /etc/security/access.conf if you need to set complex
+# access limits.
+# account  required     pam_access.so
+
+# Standard Un*x authorization.
+@include common-account
+
+# SELinux needs to be the first session rule. This ensures that any
+# lingering context has been cleared. Without out this it is possible
+# that a module could execute code in the wrong domain.
+session    [success=ok ignore=ignore module_unknown=ignore default=bad]        pam_selinux.so close
+
+# Standard Un*x session setup and teardown.
+@include common-session
+
+# Set up user limits from /etc/security/limits.conf.
+session    required     pam_limits.so
+
+# SELinux needs to intervene at login time to ensure that the process starts
+# in the proper default security context.  Only sessions which are intended
+# to run in the user's context should be run after this.
+session    [success=ok ignore=ignore module_unknown=ignore default=bad]        pam_selinux.so open
+
+@include common-password

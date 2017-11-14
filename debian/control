@@ -1,0 +1,55 @@
+Source: ocserv
+Section: net
+Priority: optional
+Maintainer: Aron Xu <aron@debian.org>
+Uploaders: Liang Guo <guoliang@debian.org>, Mike Miller <mtmiller@debian.org>
+Build-Depends: autogen (>= 5.18.6),
+               debhelper (>= 10),
+               libev-dev,
+               libgnutls28-dev (>= 3.1.10),
+               libhttp-parser-dev,
+               libkrb5-dev,
+               liblz4-dev,
+               libnl-route-3-dev [linux-any],
+               liboath-dev,
+               liboauth-dev,
+               libopts25-dev,
+               libpam0g-dev,
+               libpcl1-dev,
+               libprotobuf-c0-dev,
+               libradcli-dev (>= 1.2.5),
+               libreadline-dev,
+               libseccomp-dev [i386 amd64 x32 armhf armel arm64 mips mipsel mips64 mips64el],
+               libsystemd-dev,
+               libtalloc-dev,
+               libwrap0-dev,
+               nettle-dev,
+               pkg-config,
+               protobuf-c-compiler,
+	       libgeoip-dev,
+Standards-Version: 4.1.1
+Homepage: http://www.infradead.org/ocserv/
+VCS-Browser: https://anonscm.debian.org/cgit/collab-maint/ocserv.git
+VCS-Git: https://anonscm.debian.org/git/collab-maint/ocserv.git
+
+Package: ocserv
+Architecture: any
+Depends: dbus, lsb-base, ssl-cert, ${misc:Depends}, ${shlibs:Depends}
+Recommends: ca-certificates
+Description: OpenConnect VPN server compatible with Cisco AnyConnect VPN
+ OpenConnect server (ocserv) is an SSL VPN server. Its purpose is to be a
+ secure, small, fast and configurable VPN server. It implements the OpenConnect
+ SSL VPN protocol, and has also (currently experimental) compatibility with
+ clients using the AnyConnect SSL VPN protocol. The OpenConnect VPN protocol
+ uses the standard IETF security protocols such as TLS 1.2, and Datagram TLS to
+ provide the secure VPN service. The server is implemented primarily for the
+ GNU/Linux platform but its code is designed to be portable to other UNIX
+ variants as well.
+ .
+ Ocserv's main feature is isolation of the VPN users from the main VPN server
+ process. Each authenticated user is assigned an unprivileged worker process,
+ and a networking (tun) device. That not only eases the control of the resources
+ of each user or group of users, but also prevents privilege escalation due to
+ any bug on the VPN handling (worker) server. Each VPN user can be authenticated
+ using password, PAM, public key (in a smart card or not) or any combination of
+ methods.
