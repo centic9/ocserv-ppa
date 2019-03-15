@@ -1,16 +1,61 @@
-ocserv (0.11.9-1build1) bionic; urgency=medium
+ocserv (0.12.2-2~bpo9+1) stretch-backports; urgency=medium
 
-  * No-change rebuild for http-parser soname change.
+  * Rebuild for stretch-backports.
 
- -- Matthias Klose <doko@ubuntu.com>  Tue, 14 Nov 2017 14:00:16 +0000
+ -- Aron Xu <aron@debian.org>  Fri, 15 Mar 2019 17:21:36 +0800
+
+ocserv (0.12.2-2) unstable; urgency=medium
+
+  * d/patches: upstream patch for AC-DTLS12 and stability with
+    DTLS ciphersuite
+  * d/rules: remove deprecated configure options
+
+ -- Aron Xu <aron@debian.org>  Thu, 21 Feb 2019 04:09:36 +0800
+
+ocserv (0.12.2-1) unstable; urgency=medium
+
+  * New upstream version 0.12.2
+  * Update default configuration to have better compatibility
+  * Enable compression in default configuration
+  * Use standalone version systemd service
+
+ -- Aron Xu <aron@debian.org>  Thu, 21 Feb 2019 03:38:52 +0800
+
+ocserv (0.12.1-2) unstable; urgency=medium
+
+  * Replace /var/run with /run
+  * Increase default max-clients: 16->128
+  * Saner defaults for private IP address blocks
+  * Require seccomp on linux-any
+  * Promote gnutils-bin from Suggests to Recommends
+
+ -- Aron Xu <aron@debian.org>  Sun, 06 Jan 2019 15:08:25 +0800
+
+ocserv (0.12.1-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/changelog: Remove trailing whitespaces
+
+  [ Aron Xu ]
+  * New upstream version 0.12.1
+  * Use libprotobuf-c-dev as B-D (Closes: #906292)
+  * Remove patches applied upstream
+  * d/control: Suggests gnutls-bin (Closes: #876276)
+  * d/control: use salsa.d.o address
+  * d/copyright: update for new release
+  * d/rules: fix debian-rules-sets-dpkg-architecture-variable
+  * d/control: bump std-ver to 4.2.1
+  * d/rules: remove backup-restore magic
+
+ -- Aron Xu <aron@debian.org>  Tue, 06 Nov 2018 14:16:30 +0800
 
 ocserv (0.11.9-1) unstable; urgency=medium
 
   * New upstream version 0.11.9
-  * d/control: 
+  * d/control:
     - Bump Standards-Version to 4.1.1, no changes needed
     - Enable geoip option
-    - Remove Build-Depends on dh-systemd 
+    - Remove Build-Depends on dh-systemd
   * d/copyright: Refresh for new upstream version
   * d/patches: Remove following patches, applied upstream:
     - allow-parallel-build-of-autogen-files.patch

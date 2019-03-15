@@ -72,7 +72,7 @@ void handle_secm_list_cookies_reply(void *pool, int fd, sec_mod_st *sec)
 	t = htable_first(db, &iter);
 	while (t != NULL) {
 		if IS_CLIENT_ENTRY_EXPIRED(sec, t, now)
-			continue;
+			goto cont;
 
 		if (msg.n_cookies >= db->elems)
 			break;
@@ -84,19 +84,28 @@ void handle_secm_list_cookies_reply(void *pool, int fd, sec_mod_st *sec)
 		cookies[msg.n_cookies].session_is_open = t->session_is_open;
 		cookies[msg.n_cookies].tls_auth_ok = t->tls_auth_ok;
 
-		if (t->time > 0)
-			cookies[msg.n_cookies].last_modified = t->time;
+		if (t->created > 0)
+			cookies[msg.n_cookies].created = t->created;
 		else
-			cookies[msg.n_cookies].last_modified = 0;
+			cookies[msg.n_cookies].created = 0;
+
+		/* a session which is in use, does not expire */
+		if (t->exptime > 0 && t->in_use == 0)
+			cookies[msg.n_cookies].expires = t->exptime;
+		else
+			cookies[msg.n_cookies].expires = 0;
 		cookies[msg.n_cookies].username = t->acct_info.username;
 		cookies[msg.n_cookies].groupname = t->acct_info.groupname;
 		cookies[msg.n_cookies].user_agent = t->acct_info.user_agent;
 		cookies[msg.n_cookies].remote_ip = t->acct_info.remote_ip;
 		cookies[msg.n_cookies].status = t->status;
+		cookies[msg.n_cookies].in_use = t->in_use;
+		cookies[msg.n_cookies].vhost = VHOSTNAME(t->vhost);
 
 		msg.cookies[msg.n_cookies] = &cookies[msg.n_cookies];
 		msg.n_cookies++;
 
+ cont:
 		t = htable_next(db, &iter);
 	}
 

@@ -23,12 +23,11 @@
 
 #include <config.h>
 #include <vpn.h>
-#include <autoopts/options.h>
 #include <ipc.pb-c.h>
 
-int add_multi_line_val(void *pool, const char *name, char ***s_name, size_t *num,
-	 	       tOptionValue const *pov,
-		       const tOptionValue *val);
+char *sanitize_config_value(void *pool, const char *value);
+int _add_multi_line_val(void *pool, char ***varname, size_t *num,
+		        const char *val);
 int cfg_parse_ports(void *pool, FwPortSt ***fw_ports, size_t *n_fw_ports, const char *str);
 
 #define MAX_SUBOPTIONS 5
@@ -64,10 +63,10 @@ typedef struct pam_cfg_st {
 struct perm_cfg_st;
 
 void *get_brackets_string1(void *pool, const char *str);
-void *gssapi_get_brackets_string(struct perm_cfg_st *config, const char *str);
-void *radius_get_brackets_string(struct perm_cfg_st *config, const char *str);
-void *pam_get_brackets_string(struct perm_cfg_st *config, const char *str);
-void *plain_get_brackets_string(struct perm_cfg_st *config, const char *str);
+void *gssapi_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
+void *radius_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
+void *pam_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
+void *plain_get_brackets_string(void *pool, struct perm_cfg_st *config, const char *str);
 
 void parse_kkdcp_string(char *str, int *socktype, char **_port, char **_server, char **_path, char **_realm);
 

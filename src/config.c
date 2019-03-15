@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, 2014, 2015 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2018 Nikos Mavrogiannopoulos
  * Copyright (C) 2014, 2015 Red Hat, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,6 @@
 #include <pwd.h>
 #include <grp.h>
 #include <fcntl.h>
-#include <ocserv-args.h>
-#include <autoopts/options.h>
 #include <limits.h>
 #include <common.h>
 #include <ip-util.h>
@@ -42,11 +40,13 @@
 #include <auth/common.h>
 #include <sec-mod-sup-config.h>
 #include <sec-mod-acct.h>
+#include "inih/ini.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <dirent.h>
 #include <netdb.h>
+#include <assert.h>
 
 #include <vpn.h>
 #include <main.h>
@@ -54,295 +54,83 @@
 #include <occtl/ctl.h>
 #include "common-config.h"
 
+#include <getopt.h>
+
 #define OLD_DEFAULT_CFG_FILE "/etc/ocserv.conf"
 #define DEFAULT_CFG_FILE "/etc/ocserv/ocserv.conf"
+
+static void print_version(void);
 
 static char pid_file[_POSIX_PATH_MAX] = "";
 static char cfg_file[_POSIX_PATH_MAX] = DEFAULT_CFG_FILE;
 
-static void archive_cfg(struct perm_cfg_st* perm_config);
-
-struct cfg_options {
-	const char* name;
-	unsigned type;
-	unsigned mandatory;
-	const tOptionValue* val;
-};
+static void archive_cfg(struct list_head *head);
+static void clear_cfg(struct list_head *head);
+static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned silent);
 
 #define ERRSTR "error: "
 #define WARNSTR "warning: "
 #define NOTESTR "note: "
 
-static struct cfg_options available_options[] = {
-	{ .name = "auth", .type = OPTION_MULTI_LINE, .mandatory = 1 },
-	{ .name = "enable-auth", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "append-routes", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "expose-iroutes", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "route", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "no-route", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "select-group", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "custom-header", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "split-dns", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "acct", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "listen-host", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "listen-host-is-dyndns", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "dtls-psk", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "dtls-legacy", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "listen-proxy-proto", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "compression", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "no-compress-limit", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "tcp-port", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "max-ban-score", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ban-points-wrong-password", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ban-points-connection", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ban-points-kkdcp", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "udp-port", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "keepalive", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "switch-to-tcp-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "dpd", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "mobile-dpd", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "rate-limit-ms", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ocsp-response", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "server-cert", .type = OPTION_STRING, .mandatory = 1 },
-	{ .name = "server-key", .type = OPTION_STRING, .mandatory = 1 },
-	{ .name = "dh-params", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "pin-file", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "key-pin", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "srk-pin-file", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "srk-pin", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "user-profile", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "ca-cert", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "default-domain", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "crl", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "cert-user-oid", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "cert-group-oid", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "connect-script", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "host-update-script", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "disconnect-script", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "pid-file", .type = OPTION_STRING, .mandatory = 0 },
-#ifdef HAVE_GSSAPI
-	{ .name = "kkdcp", .type = OPTION_STRING, .mandatory = 0 },
-#endif
-	{ .name = "socket-file", .type = OPTION_STRING, .mandatory = 1 },
-	{ .name = "listen-clear-file", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "occtl-socket-file", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "banner", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "use-seccomp", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "tunnel-all-dns", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "isolate-workers", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "predictable-ips", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "session-control", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "auto-select-group", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "default-select-group", .type = OPTION_STRING, .mandatory = 0 },
-	/* this is alias for cisco-client-compat */
-	{ .name = "always-require-cert", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "cisco-client-compat", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "deny-roaming", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "use-utmp", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "use-dbus", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "persistent-cookies", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "use-occtl", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "try-mtu-discovery", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "restrict-user-to-routes", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "restrict-user-to-ports", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "ping-leases", .type = OPTION_BOOLEAN, .mandatory = 0 },
-	{ .name = "tls-priorities", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "chroot-dir", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "mtu", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "net-priority", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "output-buffer", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "cookie-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "cookie-rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "session-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "stats-report-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "server-stats-reset-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "rekey-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "rekey-method", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "auth-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "idle-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "mobile-idle-timeout", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "max-clients", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "min-reauth-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ban-reset-time", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "max-same-clients", .type = OPTION_NUMERIC, .mandatory = 0 },
+#define READ_MULTI_LINE(varname, num) { \
+	if (_add_multi_line_val(pool, &varname, &num, value) < 0) { \
+		fprintf(stderr, ERRSTR"memory\n"); \
+		exit(1); \
+	}}
 
-	{ .name = "rx-data-per-sec", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "tx-data-per-sec", .type = OPTION_NUMERIC, .mandatory = 0 },
-
-	{ .name = "run-as-user", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "run-as-group", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "device", .type = OPTION_STRING, .mandatory = 1 },
-	{ .name = "cgroup", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "proxy-url", .type = OPTION_STRING, .mandatory = 0 },
-
-	{ .name = "ipv4-network", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "ipv4-netmask", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "dns", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "ipv4-dns", .type = OPTION_MULTI_LINE, .mandatory = 0 }, /* alias dns */
-	{ .name = "ipv6-dns", .type = OPTION_MULTI_LINE, .mandatory = 0 }, /* alias dns */
-	{ .name = "nbns", .type = OPTION_MULTI_LINE, .mandatory = 0 },
-	{ .name = "ipv4-nbns", .type = OPTION_MULTI_LINE, .mandatory = 0 }, /* alias nbns */
-	{ .name = "ipv6-nbns", .type = OPTION_MULTI_LINE, .mandatory = 0 }, /* alias nbns */
-
-	{ .name = "ipv6-network", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "ipv6-prefix", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "ipv6-subnet-prefix", .type = OPTION_NUMERIC, .mandatory = 0 },
-	{ .name = "route-add-cmd", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "route-del-cmd", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "config-per-user", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "config-per-group", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "default-user-config", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "default-group-config", .type = OPTION_STRING, .mandatory = 0 },
-	{ .name = "match-tls-dtls-ciphers", .type = OPTION_BOOLEAN, .mandatory = 0 },
-};
-
-static const tOptionValue* get_option(const char* name, unsigned * mand)
-{
-unsigned j;
-
-	for (j=0;j<sizeof(available_options)/sizeof(available_options[0]);j++) {
-		if (strcasecmp(name, available_options[j].name) == 0) {
-			if (mand)
-				*mand = available_options[j].mandatory;
-			return available_options[j].val;
-		}
-	}
-
-	return NULL;
-}
-
-#define READ_MULTI_LINE(name, s_name, num) { \
-	val = get_option(name, &mand); \
-	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
-		if (add_multi_line_val(config, name, &s_name, &num, pov, val) < 0) { \
+#define READ_MULTI_BRACKET_LINE(varname, varname2, num) { \
+	if (varname == NULL || varname2 == NULL) { \
+		num = 0; \
+		varname = talloc_size(pool, sizeof(char*)*DEFAULT_CONFIG_ENTRIES); \
+		varname2 = talloc_size(pool, sizeof(char*)*DEFAULT_CONFIG_ENTRIES); \
+		if (varname == NULL || varname2 == NULL) { \
 			fprintf(stderr, ERRSTR"memory\n"); \
 			exit(1); \
 		} \
-	} else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
+	} \
+	if (num < DEFAULT_CONFIG_ENTRIES) { \
+		char *xp; \
+		varname[num] = talloc_strdup(pool, value); \
+		xp = strchr(varname[num], '['); if (xp != NULL) *xp = 0; \
+		varname2[num] = get_brackets_string1(pool, value); \
+		num++; \
+		varname[num] = NULL; \
+		varname2[num] = NULL; \
 	}}
 
-#define READ_MULTI_BRACKET_LINE(name, s_name, s_name2, num) { \
-	val = get_option(name, &mand); \
-	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
-		if (s_name == NULL || s_name2 == NULL) { \
-			num = 0; \
-			s_name = talloc_size(config, sizeof(char*)*DEFAULT_CONFIG_ENTRIES); \
-			s_name2 = talloc_size(config, sizeof(char*)*DEFAULT_CONFIG_ENTRIES); \
-			if (s_name == NULL || s_name2 == NULL) { \
-				fprintf(stderr, ERRSTR"memory\n"); \
-				exit(1); \
-			} \
-		} \
-		do { \
-		        char *xp; \
-		        if (val && strcmp(val->pzName, name)!=0) \
-				continue; \
-		        s_name[num] = talloc_strdup(config, val->v.strVal); \
-		        xp = strchr(s_name[num], '['); if (xp != NULL) *xp = 0; \
-		        s_name2[num] = get_brackets_string1(config, val->v.strVal); \
-		        num++; \
-		        if (num>=DEFAULT_CONFIG_ENTRIES) \
-		        break; \
-	      } while((val = optionNextValue(pov, val)) != NULL); \
-	      s_name[num] = NULL; \
-	      s_name2[num] = NULL; \
-	} else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
-	}}
-
-#define PREAD_STRING(pool, name, s_name) { \
-	val = get_option(name, &mand); \
-	if (val != NULL && val->valType == OPARG_TYPE_STRING) { \
-		unsigned len = strlen(val->v.strVal); \
-		while(c_isspace(val->v.strVal[len-1])) \
-			len--; \
-		s_name = talloc_strndup(pool, val->v.strVal, len); \
-	} else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
-	}}
-
-#define READ_STRING(name, s_name) \
-	PREAD_STRING(config, name, s_name)
-
-#define READ_STATIC_STRING(name, s_name) { \
-	val = get_option(name, &mand); \
-	if (val != NULL && val->valType == OPARG_TYPE_STRING) \
-		strlcpy(s_name, val->v.strVal, sizeof(s_name)); \
-	else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
-	}}
-
-#define READ_TF(name, s_name, def) \
-	{ char* tmp_tf = NULL; \
-		READ_STRING(name, tmp_tf); \
-		if (tmp_tf == NULL) s_name = def; \
-		else { \
-			if (c_strcasecmp(tmp_tf, "true") == 0 || c_strcasecmp(tmp_tf, "yes") == 0) \
-				s_name = 1; \
-			else \
-				s_name = 0; \
-		} \
-		talloc_free(tmp_tf); \
+#define PREAD_STRING(pool, varname) { \
+	unsigned len = strlen(value); \
+	while(c_isspace(value[len-1])) \
+		len--; \
+	varname = talloc_strndup(pool, value, len); \
 	}
 
-#define READ_NUMERIC(name, s_name) { \
-	val = get_option(name, &mand); \
-	if (val != NULL) { \
-		if (val->valType == OPARG_TYPE_NUMERIC) \
-			s_name = val->v.longVal; \
-		else if (val->valType == OPARG_TYPE_STRING) \
-			s_name = atoi(val->v.strVal); \
-	} else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
-	}}
+#define READ_STRING(varname) \
+	PREAD_STRING(pool, varname)
 
-#define READ_PRIO_TOS(name, s_name) { \
-	val = get_option(name, &mand); \
-	if (val != NULL) { \
-		if (val->valType == OPARG_TYPE_STRING) { \
-			if (strncmp(val->v.strVal, "0x", 2) == 0) { \
-				s_name = strtol(val->v.strVal, NULL, 16); \
-				s_name = TOS_PACK(s_name); \
-			} else { \
-				s_name = atoi(val->v.strVal); \
-				s_name++; \
-			} \
-		} \
-	} else if (mand != 0) { \
-		fprintf(stderr, ERRSTR"configuration option %s is mandatory.\n", name); \
-		exit(1); \
-	}}
-
-
-static int handle_option(const tOptionValue* val)
-{
-unsigned j;
-
-	for (j=0;j<sizeof(available_options)/sizeof(available_options[0]);j++) {
-		if (strcasecmp(val->pzName, available_options[j].name) == 0) {
-			if (available_options[j].val == NULL)
-				available_options[j].val = val;
-			return 1;
-		}
+#define READ_STATIC_STRING(varname) { \
+	strlcpy(varname, value, sizeof(varname)); \
 	}
 
-	return 0;
-}
-
-static void zero_options(void)
-{
-unsigned j;
-
-	for (j=0;j<sizeof(available_options)/sizeof(available_options[0]);j++) {
-		available_options[j].val = NULL;
+#define READ_TF(varname) {\
+	if (c_strcasecmp(value, "true") == 0 || c_strcasecmp(value, "yes") == 0) \
+		varname = 1; \
+	else \
+		varname = 0; \
 	}
-}
+
+#define READ_NUMERIC(varname) { \
+	varname = strtol(value, NULL, 10); \
+	}
+
+#define READ_PRIO_TOS(varname) \
+	if (strncmp(value, "0x", 2) == 0) { \
+		varname = strtol(value, NULL, 16); \
+		varname = TOS_PACK(varname); \
+	} else { \
+		varname = strtol(value, NULL, 10); \
+		varname++; \
+	}
 
 
 /* Parses the string ::1/prefix, to return prefix
@@ -372,7 +160,7 @@ typedef struct auth_types_st {
 	unsigned name_size;
 	const struct auth_mod_st *mod;
 	unsigned type;
-	void *(*get_brackets_string)(struct perm_cfg_st *config, const char *);
+	void *(*get_brackets_string)(void *pool, struct perm_cfg_st *config, const char *);
 } auth_types_st;
 
 #define NAME(x) (x),(sizeof(x)-1)
@@ -391,7 +179,8 @@ static auth_types_st avail_auth_types[] =
 	{NAME("certificate"), NULL, AUTH_TYPE_CERTIFICATE, NULL},
 };
 
-static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned auth_size,
+static void figure_auth_funcs(void *pool, const char *vhostname,
+			      struct perm_cfg_st *config, char **auth, unsigned auth_size,
 			      unsigned primary)
 {
 	unsigned j, i;
@@ -407,10 +196,10 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 			for (i=0;i<sizeof(avail_auth_types)/sizeof(avail_auth_types[0]);i++) {
 				if (c_strncasecmp(auth[j], avail_auth_types[i].name, avail_auth_types[i].name_size) == 0) {
 					if (avail_auth_types[i].get_brackets_string)
-						config->auth[0].additional = avail_auth_types[i].get_brackets_string(config, auth[j]+avail_auth_types[i].name_size);
+						config->auth[0].additional = avail_auth_types[i].get_brackets_string(pool, config, auth[j]+avail_auth_types[i].name_size);
 
 					if (config->auth[0].amod != NULL && avail_auth_types[i].mod != NULL) {
-						fprintf(stderr, ERRSTR"%s: you cannot mix multiple authentication methods of this type\n", auth[j]);
+						fprintf(stderr, ERRSTR"%s: you cannot mix multiple authentication methods of %s type\n", vhostname, auth[j]);
 						exit(1);
 					}
 
@@ -418,10 +207,10 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 						config->auth[0].amod = avail_auth_types[i].mod;
 					config->auth[0].type |= avail_auth_types[i].type;
 					if (config->auth[0].name == NULL) {
-						config->auth[0].name = talloc_strdup(config, avail_auth_types[i].name);
+						config->auth[0].name = talloc_strdup(pool, avail_auth_types[i].name);
 					} else {
 						char *tmp;
-						tmp = talloc_asprintf(config, "%s+%s", config->auth[0].name, avail_auth_types[i].name);
+						tmp = talloc_asprintf(pool, "%s+%s", config->auth[0].name, avail_auth_types[i].name);
 						talloc_free(config->auth[0].name);
 						config->auth[0].name = tmp;
 					}
@@ -433,12 +222,12 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 			}
 
 			if (found == 0) {
-				fprintf(stderr, ERRSTR"unknown or unsupported auth method: %s\n", auth[j]);
+				fprintf(stderr, ERRSTR"%s: unknown or unsupported auth method: %s\n", vhostname, auth[j]);
 				exit(1);
 			}
 			talloc_free(auth[j]);
 		}
-		fprintf(stderr, NOTESTR"setting '%s' as primary authentication method\n", config->auth[0].name);
+		fprintf(stderr, NOTESTR"%ssetting '%s' as primary authentication method\n", vhostname, config->auth[0].name);
 	} else {
 		unsigned x = config->auth_methods;
 		/* Append authentication methods (alternative options) */
@@ -447,10 +236,10 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 			for (i=0;i<sizeof(avail_auth_types)/sizeof(avail_auth_types[0]);i++) {
 				if (c_strncasecmp(auth[j], avail_auth_types[i].name, avail_auth_types[i].name_size) == 0) {
 					if (avail_auth_types[i].get_brackets_string)
-						config->auth[x].additional = avail_auth_types[i].get_brackets_string(config, auth[j]+avail_auth_types[i].name_size);
+						config->auth[x].additional = avail_auth_types[i].get_brackets_string(pool, config, auth[j]+avail_auth_types[i].name_size);
 
-					config->auth[x].name = talloc_strdup(config, avail_auth_types[i].name);
-					fprintf(stderr, NOTESTR"enabling '%s' as authentication method\n", avail_auth_types[i].name);
+					config->auth[x].name = talloc_strdup(pool, avail_auth_types[i].name);
+					fprintf(stderr, NOTESTR"%s: enabling '%s' as authentication method\n", vhostname, avail_auth_types[i].name);
 
 					config->auth[x].amod = avail_auth_types[i].mod;
 					config->auth[x].type |= avail_auth_types[i].type;
@@ -458,7 +247,7 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 					found = 1;
 					x++;
 					if (x >= MAX_AUTH_METHODS) {
-						fprintf(stderr, ERRSTR"you cannot enable more than %d authentication methods\n", x);
+						fprintf(stderr, ERRSTR"%s: you cannot enable more than %d authentication methods\n", vhostname, x);
 						exit(1);
 					}
 					break;
@@ -466,7 +255,7 @@ static void figure_auth_funcs(struct perm_cfg_st *config, char **auth, unsigned 
 			}
 
 			if (found == 0) {
-				fprintf(stderr, ERRSTR"unknown or unsupported auth method: %s\n", auth[j]);
+				fprintf(stderr, ERRSTR"%s: unknown or unsupported auth method: %s\n", vhostname, auth[j]);
 				exit(1);
 			}
 			talloc_free(auth[j]);
@@ -480,7 +269,7 @@ typedef struct acct_types_st {
 	const char *name;
 	unsigned name_size;
 	const struct acct_mod_st *mod;
-	void *(*get_brackets_string)(struct perm_cfg_st *config, const char *);
+	void *(*get_brackets_string)(void *pool, struct perm_cfg_st *config, const char *);
 } acct_types_st;
 
 static acct_types_st avail_acct_types[] =
@@ -493,10 +282,13 @@ static acct_types_st avail_acct_types[] =
 #endif
 };
 
-static void figure_acct_funcs(struct perm_cfg_st *config, const char *acct)
+static void figure_acct_funcs(void *pool, const char *vhostname, struct perm_cfg_st *config, const char *acct)
 {
 	unsigned i;
 	unsigned found = 0;
+
+	if (acct == NULL)
+		return;
 
 	/* Set the accounting method */
 	for (i=0;i<sizeof(avail_acct_types)/sizeof(avail_acct_types[0]);i++) {
@@ -505,10 +297,10 @@ static void figure_acct_funcs(struct perm_cfg_st *config, const char *acct)
 				continue;
 
 			if (avail_acct_types[i].get_brackets_string)
-				config->acct.additional = avail_acct_types[i].get_brackets_string(config, acct+avail_acct_types[i].name_size);
+				config->acct.additional = avail_acct_types[i].get_brackets_string(pool, config, acct+avail_acct_types[i].name_size);
 
 			if ((avail_acct_types[i].mod->auth_types & config->auth[0].type) == 0) {
-				fprintf(stderr, ERRSTR"you cannot mix the '%s' accounting method with the '%s' authentication method\n", acct, config->auth[0].name);
+				fprintf(stderr, ERRSTR"%s: you cannot mix the '%s' accounting method with the '%s' authentication method\n", vhostname, acct, config->auth[0].name);
 				exit(1);
 			}
 
@@ -520,10 +312,10 @@ static void figure_acct_funcs(struct perm_cfg_st *config, const char *acct)
 	}
 
 	if (found == 0) {
-		fprintf(stderr, ERRSTR"unknown or unsupported accounting method: %s\n", acct);
+		fprintf(stderr, ERRSTR"%s: unknown or unsupported accounting method: %s\n", vhostname, acct);
 		exit(1);
 	}
-	fprintf(stderr, NOTESTR"setting '%s' as accounting method\n", config->acct.name);
+	fprintf(stderr, NOTESTR"%ssetting '%s' as accounting method\n", vhostname, config->acct.name);
 }
 
 #ifdef HAVE_GSSAPI
@@ -585,43 +377,84 @@ static void parse_kkdcp(struct cfg_st *config, char **urlfw, unsigned urlfw_size
 
 		kkdcp_realm->realm = talloc_strdup(config->kkdcp, realm);
 
-		freeaddrinfo(res);  
+		freeaddrinfo(res);
 		kkdcp->realms_size++;
 	}
 
 }
 #endif
 
+struct iroute_ctx {
+	struct cfg_st *config;
+	const char *file;
+};
+
+char *sanitize_config_value(void *pool, const char *value)
+{
+	ssize_t len = strlen(value);
+	unsigned i = 0;
+
+	while(c_isspace(value[len-1]) || value[len-1] == '"')
+		len--;
+
+	while(c_isspace(value[i]) || value[i] == '"') {
+		i++;
+		len--;
+	}
+
+	if (len < 0)
+		return NULL;
+
+	return talloc_strndup(pool, &value[i], len); \
+
+}
+
+static int iroutes_handler(void *_ctx, const char *section, const char *name, const char* _value)
+{
+	struct iroute_ctx *ctx = _ctx;
+	int ret;
+	char *value;
+
+	if (section != NULL && section[0] != 0) {
+		fprintf(stderr, WARNSTR"skipping unknown section '%s'\n", section);
+		return 0;
+	}
+
+	if (strcmp(name, "iroute")!=0)
+		return 0;
+
+	value = sanitize_config_value(ctx->config, _value);
+	if (value == NULL)
+		return 0;
+
+	ret = _add_multi_line_val(ctx->config, &ctx->config->known_iroutes,
+				 &ctx->config->known_iroutes_size, value);
+	if (ret < 0) {
+		fprintf(stderr, ERRSTR"cannot load iroute from %s\n", ctx->file);
+	}
+
+	talloc_free(value);
+	return 0;
+}
 
 static void append_iroutes_from_file(struct cfg_st *config, const char *file)
 {
-	tOptionValue const * pov;
-	const tOptionValue* val;
+	struct iroute_ctx ctx;
 	int ret;
 	unsigned j;
 
-	pov = configFileLoad(file);
-	if (pov == NULL)
+	ctx.file = file;
+	ctx.config = config;
+
+	ret = ini_parse(file, iroutes_handler, &ctx);
+	if (ret < 0)
 		return;
-
-	val = optionGetValue(pov, NULL);
-	if (val == NULL)
-		goto exit;
-
-	ret = add_multi_line_val(config, "iroute", &config->known_iroutes,
-				 &config->known_iroutes_size, pov, val);
-	if (ret < 0) {
-		fprintf(stderr, ERRSTR"cannot load iroute from %s\n", file);
-	}
 
 	for (j=0;j<config->known_iroutes_size;j++) {
 		if (ip_route_sanity_check(config->known_iroutes, &config->known_iroutes[j]) != 0)
 			exit(1);
 	}
 
-
- exit:
-	optionUnloadNested(pov);
 	return;
 }
 
@@ -629,6 +462,7 @@ static void load_iroutes(struct cfg_st *config)
 {
 	DIR *dir;
 	struct dirent *r;
+	int ret;
 	char path[_POSIX_PATH_MAX];
 
 	if (config->per_user_dir == NULL)
@@ -639,7 +473,10 @@ static void load_iroutes(struct cfg_st *config)
 		do {
 			r = readdir(dir);
 			if (r != NULL && r->d_type == DT_REG) {
-				snprintf(path, sizeof(path), "%s/%s", config->per_user_dir, r->d_name);
+				ret = snprintf(path, sizeof(path), "%s/%s", config->per_user_dir, r->d_name);
+				if (ret != (int)strlen(path)) {
+					fprintf(stderr, NOTESTR"path name too long and truncated: %s\n", path);
+				}
 				append_iroutes_from_file(config, path);
 			}
 		} while(r != NULL);
@@ -647,405 +484,863 @@ static void load_iroutes(struct cfg_st *config)
 	}
 }
 
-static void parse_cfg_file(void *pool, const char* file, struct perm_cfg_st *perm_config, unsigned reload)
+static void apply_default_conf(vhost_cfg_st *vhost, unsigned reload)
 {
-tOptionValue const * pov;
-const tOptionValue* val, *prev;
-unsigned j, i, mand, ret;
-char** auth = NULL;
-size_t auth_size = 0;
-unsigned prefix = 0, auto_select_group = 0;
-unsigned prefix4 = 0;
-char *tmp;
-unsigned force_cert_auth;
-struct cfg_st *config = perm_config->config;
-#ifdef HAVE_GSSAPI
-char **urlfw = NULL;
-size_t urlfw_size = 0;
-#endif
-
-	pov = configFileLoad(file);
-	if (pov == NULL && file != NULL && strcmp(file, DEFAULT_CFG_FILE) == 0)
-		pov = configFileLoad(OLD_DEFAULT_CFG_FILE);
-
-	if (pov == NULL) {
-		fprintf(stderr, ERRSTR"cannot load config file %s\n", file);
-		exit(1);
+	/* set config (no-zero) default vals
+	 */
+	if (!reload) { /* perm config defaults */
+		tls_vhost_init(vhost);
+		vhost->perm_config.stats_reset_time = 24*60*60*7; /* weekly */
 	}
 
-	zero_options();
+	vhost->perm_config.config->mobile_idle_timeout = (unsigned)-1;
+	vhost->perm_config.config->no_compress_limit = DEFAULT_NO_COMPRESS_LIMIT;
+	vhost->perm_config.config->rekey_time = 24*60*60;
+	vhost->perm_config.config->cookie_timeout = DEFAULT_COOKIE_RECON_TIMEOUT;
+	vhost->perm_config.config->auth_timeout = DEFAULT_AUTH_TIMEOUT_SECS;
+	vhost->perm_config.config->ban_reset_time = DEFAULT_BAN_RESET_TIME;
+	vhost->perm_config.config->max_ban_score = DEFAULT_MAX_BAN_SCORE;
+	vhost->perm_config.config->ban_points_wrong_password = DEFAULT_PASSWORD_POINTS;
+	vhost->perm_config.config->ban_points_connect = DEFAULT_CONNECT_POINTS;
+	vhost->perm_config.config->ban_points_kkdcp = DEFAULT_KKDCP_POINTS;
+	vhost->perm_config.config->dpd = DEFAULT_DPD_TIME;
+	vhost->perm_config.config->network.ipv6_subnet_prefix = 128;
+	vhost->perm_config.config->dtls_legacy = 1;
+	vhost->perm_config.config->dtls_psk = 1;
+	vhost->perm_config.config->predictable_ips = 1;
+	vhost->perm_config.config->use_utmp = 1;
+	vhost->perm_config.config->keepalive = 3600;
+	vhost->perm_config.config->dpd = 60;
 
-	val = optionGetValue(pov, NULL);
-	if (val == NULL) {
-		fprintf(stderr, ERRSTR"no configuration directives found.\n");
-		exit(1);
-	}
+}
 
-	do {
-		if (handle_option(val) == 0) {
-			fprintf(stderr, WARNSTR"skipping unknown option '%s'\n", val->pzName);
-		}
-		prev = val;
-	} while((val = optionNextValue(pov, prev)) != NULL);
-
-	if (reload == 0) {
-		perm_config->sup_config_type = SUP_CONFIG_FILE;
-
-		READ_MULTI_LINE("auth", auth, auth_size);
-		figure_auth_funcs(perm_config, auth, auth_size, 1);
-		auth = NULL;
-		auth_size = 0;
-
-		READ_MULTI_LINE("enable-auth", auth, auth_size);
-		figure_auth_funcs(perm_config, auth, auth_size, 0);
-		auth = NULL;
-		auth_size = 0;
-
-		if (perm_config->auth[0].enabled == 0) {
-			fprintf(stderr, ERRSTR"no authentication method was specified!\n");
-			exit(1);
-		}
-
-		tmp = NULL;
-		READ_STRING("acct", tmp);
-		if (tmp != NULL) {
-			figure_acct_funcs(perm_config, tmp);
-			talloc_free(tmp);
-		}
-
-		PREAD_STRING(pool, "listen-host", perm_config->listen_host);
-		PREAD_STRING(pool, "listen-clear-file", perm_config->unix_conn_file);
-		READ_NUMERIC("tcp-port", perm_config->port);
-		READ_NUMERIC("udp-port", perm_config->udp_port);
-
-		val = get_option("run-as-user", NULL);
-		if (val != NULL && val->valType == OPARG_TYPE_STRING) {
-			const struct passwd* pwd = getpwnam(val->v.strVal);
-			if (pwd == NULL) {
-				fprintf(stderr, ERRSTR"unknown user: %s\n", val->v.strVal);
-				exit(1);
-			}
-			perm_config->uid = pwd->pw_uid;
-		}
-
-		val = get_option("run-as-group", NULL);
-		if (val != NULL && val->valType == OPARG_TYPE_STRING) {
-			const struct group *grp = getgrnam(val->v.strVal);
-			if (grp == NULL) {
-				fprintf(stderr, ERRSTR"unknown group: %s\n", val->v.strVal);
-				exit(1);
-			}
-			perm_config->gid = grp->gr_gid;
-		}
-
-		READ_MULTI_LINE("server-cert", perm_config->cert, perm_config->cert_size);
-		READ_MULTI_LINE("server-key", perm_config->key, perm_config->key_size);
-		READ_STRING("dh-params", perm_config->dh_params_file);
-		READ_STRING("pin-file", perm_config->pin_file);
-		READ_STRING("srk-pin-file", perm_config->srk_pin_file);
-		READ_STRING("ca-cert", perm_config->ca);
-
-		READ_STRING("key-pin", perm_config->key_pin);
-		READ_STRING("srk-pin", perm_config->srk_pin);
-
-		PREAD_STRING(perm_config, "socket-file", perm_config->socket_file_prefix);
-		PREAD_STRING(perm_config, "occtl-socket-file", perm_config->occtl_socket_file);
-		if (perm_config->occtl_socket_file == NULL)
-			perm_config->occtl_socket_file = talloc_strdup(perm_config, OCCTL_UNIX_SOCKET);
-
-		PREAD_STRING(perm_config, "chroot-dir", perm_config->chroot_dir);
-
-		/* cannot be modified as it would require sec-mod to
-		 * re-read configuration too */
-		READ_NUMERIC("server-stats-reset-time", perm_config->stats_reset_time);
-		if (perm_config->stats_reset_time <= 0) {
-			perm_config->stats_reset_time = 24*60*60*7; /* weekly */
-		}
-
-		list_head_init(&perm_config->attic);
-
-	}
-
-	perm_config->config = talloc_zero(perm_config, struct cfg_st);
-	if (perm_config->config == NULL)
+static void cfg_new(struct vhost_cfg_st *vhost, unsigned reload)
+{
+	vhost->perm_config.config = talloc_zero(vhost->pool, struct cfg_st);
+	if (vhost->perm_config.config == NULL)
 		exit(1);
 
-	config = perm_config->config;
-	pool = config;
-
-	config->usage_count = talloc_zero(config, int);
-	if (config->usage_count == NULL) {
+	vhost->perm_config.config->usage_count = talloc_zero(vhost->perm_config.config, int);
+	if (vhost->perm_config.config->usage_count == NULL) {
 		fprintf(stderr, ERRSTR"memory\n");
 		exit(1);
 	}
 
-	/* When adding allocated data, remember to modify
-	 * reload_cfg_file();
-	 */
-	READ_TF("listen-host-is-dyndns", config->is_dyndns, 0);
-	READ_TF("listen-proxy-proto", config->listen_proxy_proto, 0);
-	READ_TF("append-routes", config->append_routes, 0);
+	apply_default_conf(vhost, reload);
+}
 
-#ifdef HAVE_GSSAPI
-	READ_MULTI_LINE("kkdcp", urlfw, urlfw_size);
-	if (urlfw_size > 0) {
-		parse_kkdcp(config, urlfw, urlfw_size);
-		talloc_free(urlfw);
-	}
-#endif
+static vhost_cfg_st *vhost_add(void *pool, struct list_head *head, const char *name, unsigned reload)
+{
+	vhost_cfg_st *vhost;
 
-	READ_TF("tunnel-all-dns", config->tunnel_all_dns, 0);
+	vhost = talloc_zero(pool, struct vhost_cfg_st);
+	if (vhost == NULL)
+		exit(1);
+	vhost->pool = vhost;
 
-	READ_NUMERIC("keepalive", config->keepalive);
-	READ_NUMERIC("switch-to-tcp-timeout", config->switch_to_tcp_timeout);
-	READ_NUMERIC("dpd", config->dpd);
-	if (config->dpd == 0)
-		config->dpd = DEFAULT_DPD_TIME;
+	cfg_new(vhost, reload);
 
-	READ_NUMERIC("mobile-dpd", config->mobile_dpd);
-	if (config->mobile_dpd == 0)
-		config->mobile_dpd = config->dpd;
-
-	READ_NUMERIC("rate-limit-ms", config->rate_limit_ms);
-
-	READ_STRING("ocsp-response", config->ocsp_response);
-
-	READ_STRING("user-profile", config->xml_config_file);
-
-	READ_STRING("default-domain", config->default_domain);
-	READ_STRING("crl", config->crl);
-	READ_STRING("cert-user-oid", config->cert_user_oid);
-	READ_STRING("cert-group-oid", config->cert_group_oid);
-
-	READ_STRING("connect-script", config->connect_script);
-	READ_STRING("host-update-script", config->host_update_script);
-	READ_STRING("disconnect-script", config->disconnect_script);
-
-	if (reload == 0 && pid_file[0] == 0)
-		READ_STATIC_STRING("pid-file", pid_file);
-
-
-	val = get_option("session-control", NULL);
-	if (val != NULL) {
-		fprintf(stderr, WARNSTR"the option 'session-control' is deprecated\n");
-	}
-
-	READ_STRING("banner", config->banner);
-
-	READ_TF("dtls-legacy", config->dtls_legacy, 1);
-	READ_TF("cisco-client-compat", config->cisco_client_compat, 0);
-	if (config->cisco_client_compat) {
-		if (!config->dtls_legacy) {
-			fprintf(stderr, NOTESTR"the cisco-client-compat option implies dtls-legacy = true; enabling\n");
-		}
-		config->dtls_legacy = 1;
-	}
-
-	READ_TF("always-require-cert", force_cert_auth, 1);
-	if (force_cert_auth == 0) {
-		fprintf(stderr, NOTESTR"'always-require-cert' was replaced by 'cisco-client-compat'\n");
-		config->cisco_client_compat = 1;
-	}
-
-	READ_TF("dtls-psk", config->dtls_psk, 1);
-	if (perm_config->unix_conn_file) {
-		if (config->dtls_psk) {
-			fprintf(stderr, NOTESTR"'dtls-psk' cannot be combined with unix socket file\n");
-		}
-		config->dtls_psk = 0;
-	}
-
-	READ_TF("match-tls-dtls-ciphers", config->match_dtls_and_tls, 0);
-	if (config->match_dtls_and_tls) {
-		if (config->dtls_legacy) {
-			fprintf(stderr, ERRSTR"'match-tls-dtls-ciphers' cannot be applied when 'dtls-legacy' or 'cisco-client-compat' is on\n");
+	if (name) {
+		vhost->name = talloc_strdup(vhost, name);
+		if (vhost->name == NULL) {
+			fprintf(stderr, ERRSTR"memory\n");
 			exit(1);
 		}
 	}
 
-	READ_TF("compression", config->enable_compression, 0);
-	READ_NUMERIC("no-compress-limit", config->no_compress_limit);
-	if (config->no_compress_limit == 0)
-		config->no_compress_limit = DEFAULT_NO_COMPRESS_LIMIT;
-	if (config->no_compress_limit < MIN_NO_COMPRESS_LIMIT)
-		config->no_compress_limit = MIN_NO_COMPRESS_LIMIT;
+	vhost->perm_config.sup_config_type = SUP_CONFIG_FILE;
+	list_head_init(&vhost->perm_config.attic);
 
-	READ_TF("use-seccomp", config->isolate, 0);
-	if (config->isolate) {
-		fprintf(stderr, NOTESTR"'use-seccomp' was replaced by 'isolate-workers'\n");
-	} else {
-		READ_TF("isolate-workers", config->isolate, 0);
+
+	list_add(head, &vhost->list);
+
+	return vhost;
+}
+
+struct ini_ctx_st {
+	struct list_head *head;
+	unsigned reload;
+	const char *file;
+	void *pool;
+};
+
+#define WARN_ON_VHOST_ONLY(vname, oname) \
+	({int rval; \
+		if (vname) { \
+			fprintf(stderr, WARNSTR"%s is ignored on %s virtual host\n", oname, vname); \
+			rval = 1; \
+		} else { \
+			rval = 0; \
+		} \
+	rval; \
+	})
+
+#define WARN_ON_VHOST(vname, oname, member) \
+	({int rval; \
+		if (vname) { \
+			fprintf(stderr, WARNSTR"%s is ignored on %s virtual host\n", oname, vname); \
+			memcpy(&config->member, &defvhost->perm_config.config->member, sizeof(config->member)); \
+			rval = 1; \
+		} else { \
+			rval = 0; \
+		} \
+	rval; \
+	})
+
+#define PWARN_ON_VHOST(vname, oname, member) \
+	({int rval; \
+		if (vname) { \
+			fprintf(stderr, WARNSTR"%s is ignored on %s virtual host\n", oname, vname); \
+			vhost->perm_config.member = defvhost->perm_config.member; \
+			rval = 1; \
+		} else { \
+			rval = 0; \
+		} \
+	rval; \
+	})
+
+#define PWARN_ON_VHOST_STRDUP(vname, oname, member) \
+	({int rval; \
+		if (vname) { \
+			fprintf(stderr, WARNSTR"%s is ignored on %s virtual host\n", oname, vname); \
+			vhost->perm_config.member = talloc_strdup(pool, defvhost->perm_config.member); \
+			rval = 1; \
+		} else { \
+			rval = 0; \
+		} \
+	rval; \
+	})
+
+static char *idna_map(void *pool, const char *name, unsigned size)
+{
+#if GNUTLS_VERSION_NUMBER > 0x030508
+	int ret;
+	gnutls_datum_t out;
+
+	ret = gnutls_idna_map(name, size, &out, 0);
+	if (ret < 0) {
+		goto fallback;
 	}
-#if !defined(HAVE_LIBSECCOMP)
-	if (config->isolate != 0) {
-		fprintf(stderr, ERRSTR"'isolate-workers' is set to true, but not compiled with seccomp or Linux namespaces support\n");
-	}
+
+	return talloc_strdup(pool, (char*)out.data);
+
+ fallback:
 #endif
+	return talloc_strndup(pool, name, size);
+}
 
-	READ_TF("predictable-ips", config->predictable_ips, 1);
-	READ_TF("use-utmp", config->use_utmp, 1);
-	READ_TF("use-dbus", config->use_dbus, 0);
-	if (config->use_dbus != 0) {
-		fprintf(stderr, NOTESTR"'use-dbus' was replaced by 'use-occtl'\n");
-		config->use_occtl = config->use_dbus;
-	} else {
-		READ_TF("use-occtl", config->use_occtl, 0);
-		if (config->use_occtl == 0)
-			config->use_dbus = 0;
-		else
-			config->use_dbus = 1;
+static
+char *sanitize_name(void *pool, const char *p)
+{
+	size_t len;
+	/* cleanup spaces before and after */
+	while (c_isspace(*p))
+		p++;
+
+	len = strlen(p);
+	if (len > 0) {
+		while (c_isspace(p[len-1]))
+			len--;
 	}
 
-	READ_TF("try-mtu-discovery", config->try_mtu, 0);
-	READ_TF("ping-leases", config->ping_leases, 0);
+	return idna_map(pool, p, len);
+}
 
-	READ_TF("restrict-user-to-routes", config->restrict_user_to_routes, 0);
+static int cfg_ini_handler(void *_ctx, const char *section, const char *name, const char *_value)
+{
+	struct ini_ctx_st *ctx = _ctx;
+	vhost_cfg_st *vhost, *vtmp = NULL, *defvhost;
+	unsigned use_dbus;
+	struct cfg_st *config;
+	void *pool;
+	unsigned reload = ctx->reload;
+	int ret;
+	unsigned stage1_found = 1;
+	unsigned force_cert_auth;
+	unsigned prefix = 0;
+	unsigned prefix4 = 0;
+	unsigned found_vhost;
+	char *value;
 
-	tmp = NULL;
-	READ_STRING("restrict-user-to-ports", tmp);
-	if (tmp) {
-		ret = cfg_parse_ports(pool, &config->fw_ports, &config->n_fw_ports, tmp);
+	defvhost = vhost = default_vhost(ctx->head);
+
+	assert(defvhost != NULL);
+
+	if (section != NULL && section[0] != 0) {
+		char *vname;
+
+		if (strncmp(section, "vhost:", 6) != 0) {
+			if (reload == 0)
+				fprintf(stderr, WARNSTR"skipping unknown section '%s'\n", section);
+			return 0;
+		}
+
+		vname = sanitize_name(ctx->pool, section+6);
+		if (vname == NULL || vname[0] == 0) {
+			fprintf(stderr, ERRSTR"virtual host name is illegal '%s'\n", section+6);
+			exit(1);
+		}
+
+		/* virtual host */
+		found_vhost = 0;
+		list_for_each(ctx->head, vtmp, list) {
+			if (vtmp->name && strcmp(vtmp->name, vname) == 0) {
+				vhost = vtmp;
+				found_vhost = 1;
+				break;
+			}
+		}
+
+		if (c_strcasecmp(section+6, vname) != 0) {
+			fprintf(stderr, NOTESTR"virtual host name '%s' was canonicalized to '%s'\n",
+				section+6, vname);
+		}
+
+		if (!found_vhost) {
+			/* add */
+			fprintf(stderr, NOTESTR"adding virtual host: %s\n", vname);
+			vhost = vhost_add(ctx->pool, ctx->head, vname, reload);
+		}
+		talloc_free(vname);
+	}
+
+	value = sanitize_config_value(vhost->pool, _value);
+	if (value == NULL)
+		return 0;
+
+	/* read persistent configuration */
+	if (vhost->auth_init == 0) {
+		pool = vhost;
+
+		if (strcmp(name, "auth") == 0) {
+			READ_MULTI_LINE(vhost->auth, vhost->auth_size);
+		} else if (strcmp(name, "enable-auth") == 0) {
+			READ_MULTI_LINE(vhost->eauth, vhost->eauth_size);
+		} else if (strcmp(name, "acct") == 0) {
+			vhost->acct = talloc_strdup(pool, value);
+		} else if (strcmp(name, "listen-host") == 0) {
+			PREAD_STRING(pool, vhost->perm_config.listen_host);
+		} else if (strcmp(name, "listen-clear-file") == 0) {
+			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "listen-clear-file", unix_conn_file))
+				PREAD_STRING(pool, vhost->perm_config.unix_conn_file);
+		} else if (strcmp(name, "tcp-port") == 0) {
+			if (!PWARN_ON_VHOST(vhost->name, "tcp-port", port))
+				READ_NUMERIC(vhost->perm_config.port);
+		} else if (strcmp(name, "udp-port") == 0) {
+			if (!PWARN_ON_VHOST(vhost->name, "udp-port", udp_port))
+				READ_NUMERIC(vhost->perm_config.udp_port);
+		} else if (strcmp(name, "run-as-user") == 0) {
+			if (!PWARN_ON_VHOST(vhost->name, "run-as-user", uid)) {
+				const struct passwd* pwd = getpwnam(value);
+				if (pwd == NULL) {
+					fprintf(stderr, ERRSTR"unknown user: %s\n", value);
+					exit(1);
+				}
+				vhost->perm_config.uid = pwd->pw_uid;
+			}
+		} else if (strcmp(name, "run-as-group") == 0) {
+			if (!PWARN_ON_VHOST(vhost->name, "run-as-group", gid)) {
+				const struct group* grp = getgrnam(value);
+				if (grp == NULL) {
+					fprintf(stderr, ERRSTR"unknown group: %s\n", value);
+					exit(1);
+				}
+				vhost->perm_config.gid = grp->gr_gid;
+			}
+		} else if (strcmp(name, "server-cert") == 0) {
+			READ_MULTI_LINE(vhost->perm_config.cert, vhost->perm_config.cert_size);
+		} else if (strcmp(name, "server-key") == 0) {
+			READ_MULTI_LINE(vhost->perm_config.key, vhost->perm_config.key_size);
+		} else if (strcmp(name, "dh-params") == 0) {
+			READ_STRING(vhost->perm_config.dh_params_file);
+		} else if (strcmp(name, "pin-file") == 0) {
+			READ_STRING(vhost->perm_config.pin_file);
+		} else if (strcmp(name, "srk-pin-file") == 0) {
+			READ_STRING(vhost->perm_config.srk_pin_file);
+		} else if (strcmp(name, "ca-cert") == 0) {
+			READ_STRING(vhost->perm_config.ca);
+		} else if (strcmp(name, "key-pin") == 0) {
+			READ_STRING(vhost->perm_config.key_pin);
+		} else if (strcmp(name, "srk-pin") == 0) {
+			READ_STRING(vhost->perm_config.srk_pin);
+		} else if (strcmp(name, "socket-file") == 0) {
+			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "socket-file", socket_file_prefix))
+				PREAD_STRING(pool, vhost->perm_config.socket_file_prefix);
+		} else if (strcmp(name, "occtl-socket-file") == 0) {
+			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "occtl-socket-file", occtl_socket_file))
+				PREAD_STRING(pool, vhost->perm_config.occtl_socket_file);
+		} else if (strcmp(name, "chroot-dir") == 0) {
+			if (!PWARN_ON_VHOST_STRDUP(vhost->name, "chroot-dir", chroot_dir))
+				PREAD_STRING(pool, vhost->perm_config.chroot_dir);
+		} else if (strcmp(name, "server-stats-reset-time") == 0) {
+			/* cannot be modified as it would require sec-mod to
+			 * re-read configuration too */
+			if (!PWARN_ON_VHOST(vhost->name, "server-stats-reset-time", stats_reset_time))
+				READ_NUMERIC(vhost->perm_config.stats_reset_time);
+		} else if (strcmp(name, "pid-file") == 0) {
+			if (pid_file[0] == 0) {
+				READ_STATIC_STRING(pid_file);
+			} else if (reload == 0)
+				fprintf(stderr, NOTESTR"skipping 'pid-file' config option\n");
+		} else {
+			stage1_found = 0;
+		}
+
+		if (stage1_found)
+			goto exit;
+	}
+
+
+	/* read the rest of the (non-permanent) configuration */
+	pool = vhost->perm_config.config;
+	config = vhost->perm_config.config;
+
+	/* When adding allocated data, remember to modify
+	 * reload_cfg_file();
+	 */
+	if (strcmp(name, "listen-host-is-dyndns") == 0) {
+		READ_TF(config->is_dyndns);
+	} else if (strcmp(name, "listen-proxy-proto") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "listen-proxy-proto", listen_proxy_proto))
+			READ_TF(config->listen_proxy_proto);
+	} else if (strcmp(name, "append-routes") == 0) {
+		READ_TF(config->append_routes);
+#ifdef HAVE_GSSAPI
+	} else if (strcmp(name, "kkdcp") == 0) {
+		READ_MULTI_LINE(vhost->urlfw, vhost->urlfw_size);
+#endif
+	} else if (strcmp(name, "tunnel-all-dns") == 0) {
+		READ_TF(config->tunnel_all_dns);
+	} else if (strcmp(name, "keepalive") == 0) {
+		READ_NUMERIC(config->keepalive);
+	} else if (strcmp(name, "switch-to-tcp-timeout") == 0) {
+		READ_NUMERIC(config->switch_to_tcp_timeout);
+	} else if (strcmp(name, "dpd") == 0) {
+		READ_NUMERIC(config->dpd);
+	} else if (strcmp(name, "mobile-dpd") == 0) {
+		READ_NUMERIC(config->mobile_dpd);
+	} else if (strcmp(name, "rate-limit-ms") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "rate-limit-ms", rate_limit_ms))
+			READ_NUMERIC(config->rate_limit_ms);
+	} else if (strcmp(name, "ocsp-response") == 0) {
+		READ_STRING(config->ocsp_response);
+	} else if (strcmp(name, "user-profile") == 0) {
+		READ_STRING(config->xml_config_file);
+	} else if (strcmp(name, "default-domain") == 0) {
+		READ_STRING(config->default_domain);
+	} else if (strcmp(name, "crl") == 0) {
+		READ_STRING(config->crl);
+	} else if (strcmp(name, "cert-user-oid") == 0) {
+		READ_STRING(config->cert_user_oid);
+	} else if (strcmp(name, "cert-group-oid") == 0) {
+		READ_STRING(config->cert_group_oid);
+	} else if (strcmp(name, "connect-script") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "connect-script", connect_script))
+			READ_STRING(config->connect_script);
+	} else if (strcmp(name, "host-update-script") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "host-update-script", host_update_script))
+			READ_STRING(config->host_update_script);
+	} else if (strcmp(name, "disconnect-script") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "disconnect-script", disconnect_script))
+			READ_STRING(config->disconnect_script);
+	} else if (strcmp(name, "session-control") == 0) {
+		fprintf(stderr, WARNSTR"the option 'session-control' is deprecated\n");
+	} else if (strcmp(name, "banner") == 0) {
+		READ_STRING(config->banner);
+	} else if (strcmp(name, "dtls-legacy") == 0) {
+		READ_TF(config->dtls_legacy);
+	} else if (strcmp(name, "cisco-client-compat") == 0) {
+		READ_TF(config->cisco_client_compat);
+	} else if (strcmp(name, "always-require-cert") == 0) {
+		READ_TF(force_cert_auth);
+		if (force_cert_auth == 0) {
+			fprintf(stderr, NOTESTR"'always-require-cert' was replaced by 'cisco-client-compat'\n");
+			config->cisco_client_compat = 1;
+		}
+	} else if (strcmp(name, "dtls-psk") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "dtls-psk", dtls_psk))
+			READ_TF(config->dtls_psk);
+	} else if (strcmp(name, "match-tls-dtls-ciphers") == 0) {
+		READ_TF(config->match_dtls_and_tls);
+	} else if (strcmp(name, "compression") == 0) {
+		READ_TF(config->enable_compression);
+	} else if (strcmp(name, "compression-algo-priority") == 0) {
+		if (!WARN_ON_VHOST_ONLY(vhost->name, "compression-algo-priority")) {
+			if (switch_comp_priority(pool, value) == 0) {
+				fprintf(stderr, WARNSTR"invalid compression modstring %s\n", value);
+			}
+		}
+	} else if (strcmp(name, "no-compress-limit") == 0) {
+		READ_NUMERIC(config->no_compress_limit);
+	} else if (strcmp(name, "use-seccomp") == 0) {
+		READ_TF(config->isolate);
+		if (config->isolate)
+			fprintf(stderr, NOTESTR"'use-seccomp' was replaced by 'isolate-workers'\n");
+	} else if (strcmp(name, "isolate-workers") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "isolate-workers", isolate))
+			READ_TF(config->isolate);
+	} else if (strcmp(name, "predictable-ips") == 0) {
+		READ_TF(config->predictable_ips);
+	} else if (strcmp(name, "use-utmp") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "use-utmp", use_utmp))
+			READ_TF(config->use_utmp);
+	} else if (strcmp(name, "use-dbus") == 0) {
+		READ_TF(use_dbus);
+		if (use_dbus != 0) {
+			fprintf(stderr, NOTESTR"'use-dbus' was replaced by 'use-occtl'\n");
+			config->use_occtl = use_dbus;
+		}
+	} else if (strcmp(name, "use-occtl") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "use-occtl", use_occtl))
+			READ_TF(config->use_occtl);
+	} else if (strcmp(name, "try-mtu-discovery") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "try-mtu-discovery", try_mtu))
+			READ_TF(config->try_mtu);
+	} else if (strcmp(name, "ping-leases") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "ping_leases", ping_leases))
+			READ_TF(config->ping_leases);
+	} else if (strcmp(name, "restrict-user-to-routes") == 0) {
+		READ_TF(config->restrict_user_to_routes);
+	} else if (strcmp(name, "restrict-user-to-ports") == 0) {
+		ret = cfg_parse_ports(pool, &config->fw_ports, &config->n_fw_ports, value);
 		if (ret < 0) {
 			fprintf(stderr, ERRSTR"cannot parse restrict-user-to-ports\n");
 			exit(1);
 		}
-		talloc_free(tmp);
-	}
-
-	READ_STRING("tls-priorities", config->priorities);
-
-	READ_NUMERIC("mtu", config->default_mtu);
-
-	READ_PRIO_TOS("net-priority", config->net_priority);
-
-	READ_NUMERIC("output-buffer", config->output_buffer);
-
-	READ_NUMERIC("rx-data-per-sec", config->rx_per_sec);
-	READ_NUMERIC("tx-data-per-sec", config->tx_per_sec);
-	config->rx_per_sec /= 1000; /* in kb */
-	config->tx_per_sec /= 1000;
-
-	READ_TF("deny-roaming", config->deny_roaming, 0);
-
-	READ_NUMERIC("stats-report-time", config->stats_report_time);
-
-	config->rekey_time = -1;
-	READ_NUMERIC("rekey-time", config->rekey_time);
-	if (config->rekey_time == -1) {
-		config->rekey_time = 24*60*60;
-	}
-
-	tmp = NULL;
-	READ_STRING("rekey-method", tmp);
-	if (tmp == NULL || strcmp(tmp, "ssl") == 0)
-		config->rekey_method = REKEY_METHOD_SSL;
-	else if (strcmp(tmp, "new-tunnel") == 0)
-		config->rekey_method = REKEY_METHOD_NEW_TUNNEL;
-	else {
-		fprintf(stderr, ERRSTR"unknown rekey method '%s'\n", tmp);
-		exit(1);
-	}
-	talloc_free(tmp); tmp = NULL;
-
-	READ_NUMERIC("cookie-timeout", config->cookie_timeout);
-	if (config->cookie_timeout == 0)
-		config->cookie_timeout = DEFAULT_COOKIE_RECON_TIMEOUT;
-	READ_TF("persistent-cookies", config->persistent_cookies, 0);
-
-	READ_NUMERIC("session-timeout", config->session_timeout);
-
-	READ_NUMERIC("auth-timeout", config->auth_timeout);
-	if (config->auth_timeout == 0) {
-		config->auth_timeout = DEFAULT_AUTH_TIMEOUT_SECS;
-	}
-
-	READ_NUMERIC("idle-timeout", config->idle_timeout);
-
-	config->mobile_idle_timeout = -1;
-	READ_NUMERIC("mobile-idle-timeout", config->mobile_idle_timeout);
-	if (config->mobile_idle_timeout == -1)
-		config->mobile_idle_timeout = config->idle_timeout;
-
-	READ_NUMERIC("max-clients", config->max_clients);
-	READ_NUMERIC("min-reauth-time", config->min_reauth_time);
-	config->ban_reset_time = -1;
-	READ_NUMERIC("ban-reset-time", config->ban_reset_time);
-	if (config->ban_reset_time == -1)
-		config->ban_reset_time = DEFAULT_BAN_RESET_TIME;
-
-	config->max_ban_score = -1;
-	READ_NUMERIC("max-ban-score", config->max_ban_score);
-	if (config->max_ban_score == -1)
-		config->max_ban_score = DEFAULT_MAX_BAN_SCORE;
-
-	config->ban_points_wrong_password = DEFAULT_PASSWORD_POINTS;
-	READ_NUMERIC("ban-points-wrong-password", config->ban_points_wrong_password);
-	config->ban_points_connect = DEFAULT_CONNECT_POINTS;
-	READ_NUMERIC("ban-points-connection", config->ban_points_connect);
-	config->ban_points_kkdcp = DEFAULT_KKDCP_POINTS;
-	READ_NUMERIC("ban-points-kkdcp", config->ban_points_kkdcp);
-
-	READ_NUMERIC("max-same-clients", config->max_same_clients);
-
-	READ_STATIC_STRING("device", config->network.name);
-	READ_STRING("cgroup", config->cgroup);
-	READ_STRING("proxy-url", config->proxy_url);
-
-	READ_STRING("ipv4-network", config->network.ipv4);
-
-	prefix4 = extract_prefix(config->network.ipv4);
-	if (prefix4 == 0) {
-		READ_STRING("ipv4-netmask", config->network.ipv4_netmask);
-	} else {
-		config->network.ipv4_netmask = ipv4_prefix_to_strmask(config, prefix4);
-	}
-
-	READ_STRING("ipv6-network", config->network.ipv6);
-	/* read subnet prefix */
-	READ_NUMERIC("ipv6-subnet-prefix", prefix);
-	if (prefix > 0) {
-		config->network.ipv6_subnet_prefix = prefix;
-
-		if (valid_ipv6_prefix(prefix) == 0) {
-			fprintf(stderr, ERRSTR"invalid IPv6 subnet prefix: %u\n", prefix);
+	} else if (strcmp(name, "tls-priorities") == 0) {
+		READ_STRING(config->priorities);
+	} else if (strcmp(name, "mtu") == 0) {
+		READ_NUMERIC(config->default_mtu);
+	} else if (strcmp(name, "net-priority") == 0) {
+		READ_PRIO_TOS(config->net_priority);
+	} else if (strcmp(name, "output-buffer") == 0) {
+		READ_NUMERIC(config->output_buffer);
+	} else if (strcmp(name, "rx-data-per-sec") == 0) {
+		READ_NUMERIC(config->rx_per_sec);
+		config->rx_per_sec /= 1000; /* in kb */
+	} else if (strcmp(name, "tx-data-per-sec") == 0) {
+		READ_NUMERIC(config->tx_per_sec);
+		config->tx_per_sec /= 1000; /* in kb */
+	} else if (strcmp(name, "deny-roaming") == 0) {
+		READ_TF(config->deny_roaming);
+	} else if (strcmp(name, "stats-report-time") == 0) {
+		READ_NUMERIC(config->stats_report_time);
+	} else if (strcmp(name, "rekey-time") == 0) {
+		READ_NUMERIC(config->rekey_time);
+	} else if (strcmp(name, "rekey-method") == 0) {
+		if (strcmp(value, "ssl") == 0)
+			config->rekey_method = REKEY_METHOD_SSL;
+		else if (strcmp(value, "new-tunnel") == 0)
+			config->rekey_method = REKEY_METHOD_NEW_TUNNEL;
+		else {
+			fprintf(stderr, ERRSTR"unknown rekey method '%s'\n", value);
 			exit(1);
 		}
-	}
+	} else if (strcmp(name, "cookie-timeout") == 0) {
+		READ_NUMERIC(config->cookie_timeout);
+	} else if (strcmp(name, "persistent-cookies") == 0) {
+		READ_TF(config->persistent_cookies);
+	} else if (strcmp(name, "session-timeout") == 0) {
+		READ_NUMERIC(config->session_timeout);
+	} else if (strcmp(name, "auth-timeout") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "auth-timeout", auth_timeout))
+			READ_NUMERIC(config->auth_timeout);
+	} else if (strcmp(name, "idle-timeout") == 0) {
+		READ_NUMERIC(config->idle_timeout);
+	} else if (strcmp(name, "mobile-idle-timeout") == 0) {
+		READ_NUMERIC(config->mobile_idle_timeout);
+	} else if (strcmp(name, "max-clients") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "max-clients", max_clients))
+			READ_NUMERIC(config->max_clients);
+	} else if (strcmp(name, "min-reauth-time") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "min-reauth-time", min_reauth_time))
+			READ_NUMERIC(config->min_reauth_time);
+	} else if (strcmp(name, "ban-reset-time") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "ban-reset-time", ban_reset_time))
+			READ_NUMERIC(config->ban_reset_time);
+	} else if (strcmp(name, "max-ban-score") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "max-ban-score", max_ban_score))
+			READ_NUMERIC( config->max_ban_score);
+	} else if (strcmp(name, "ban-points-wrong-password") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "ban-points-wrong-password", ban_points_wrong_password))
+			READ_NUMERIC(config->ban_points_wrong_password);
+	} else if (strcmp(name, "ban-points-connection") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "ban-points-connection", ban_points_connect))
+			READ_NUMERIC(config->ban_points_connect);
+	} else if (strcmp(name, "ban-points-kkdcp") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "ban-points-kkdcp", ban_points_kkdcp))
+			READ_NUMERIC(config->ban_points_kkdcp);
+	} else if (strcmp(name, "max-same-clients") == 0) {
+		READ_NUMERIC(config->max_same_clients);
+	} else if (strcmp(name, "device") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "device", network.name))
+			READ_STATIC_STRING(config->network.name);
+	} else if (strcmp(name, "cgroup") == 0) {
+		READ_STRING(config->cgroup);
+	} else if (strcmp(name, "proxy-url") == 0) {
+		READ_STRING(config->proxy_url);
+	} else if (strcmp(name, "ipv4-network") == 0) {
+		READ_STRING(config->network.ipv4);
+		prefix4 = extract_prefix(config->network.ipv4);
+		if (prefix4 != 0) {
+			config->network.ipv4_netmask = ipv4_prefix_to_strmask(config, prefix4);
+		}
+	} else if (strcmp(name, "ipv4-netmask") == 0) {
+		READ_STRING(config->network.ipv4_netmask);
+	} else if (strcmp(name, "ipv6-network") == 0) {
+		READ_STRING(config->network.ipv6);
+		prefix = extract_prefix(config->network.ipv6);
+		if (prefix)
+			config->network.ipv6_prefix = prefix;
+	} else if (strcmp(name, "ipv6-prefix") == 0) {
+		READ_NUMERIC(config->network.ipv6_prefix);
 
-	/* read net prefix */
-	prefix = extract_prefix(config->network.ipv6);
-	if (prefix == 0) {
-		READ_NUMERIC("ipv6-prefix", prefix);
-	}
-
-	if (prefix > 0) {
-		config->network.ipv6_prefix = prefix;
-
-		if (valid_ipv6_prefix(prefix) == 0) {
+		if (valid_ipv6_prefix(config->network.ipv6_prefix) == 0) {
 			fprintf(stderr, ERRSTR"invalid IPv6 prefix: %u\n", prefix);
 			exit(1);
 		}
+	} else if (strcmp(name, "ipv6-subnet-prefix") == 0) {
+		/* read subnet prefix */
+		READ_NUMERIC(prefix);
+		if (prefix > 0) {
+			config->network.ipv6_subnet_prefix = prefix;
+
+			if (valid_ipv6_prefix(prefix) == 0) {
+				fprintf(stderr, ERRSTR"invalid IPv6 subnet prefix: %u\n", prefix);
+				exit(1);
+			}
+		}
+	} else if (strcmp(name, "custom-header") == 0) {
+		READ_MULTI_LINE(config->custom_header, config->custom_header_size);
+	} else if (strcmp(name, "split-dns") == 0) {
+		READ_MULTI_LINE(config->split_dns, config->split_dns_size);
+	} else if (strcmp(name, "route") == 0) {
+		READ_MULTI_LINE(config->network.routes, config->network.routes_size);
+	} else if (strcmp(name, "no-route") == 0) {
+		READ_MULTI_LINE(config->network.no_routes, config->network.no_routes_size);
+	} else if (strcmp(name, "default-select-group") == 0) {
+		READ_STRING(config->default_select_group);
+	} else if (strcmp(name, "auto-select-group") == 0) {
+		READ_TF(vhost->auto_select_group);
+	} else if (strcmp(name, "select-group") == 0) {
+		READ_MULTI_BRACKET_LINE(config->group_list,
+					config->friendly_group_list,
+					config->group_list_size);
+	} else if (strcmp(name, "dns") == 0) {
+		READ_MULTI_LINE(config->network.dns, config->network.dns_size);
+	} else if (strcmp(name, "ipv4-dns") == 0) {
+		READ_MULTI_LINE(config->network.dns, config->network.dns_size);
+	} else if (strcmp(name, "ipv6-dns") == 0) {
+		READ_MULTI_LINE(config->network.dns, config->network.dns_size);
+	} else if (strcmp(name, "nbns") == 0) {
+		READ_MULTI_LINE(config->network.nbns, config->network.nbns_size);
+	} else if (strcmp(name, "ipv4-nbns") == 0) {
+		READ_MULTI_LINE(config->network.nbns, config->network.nbns_size);
+	} else if (strcmp(name, "ipv6-nbns") == 0) {
+		READ_MULTI_LINE(config->network.nbns, config->network.nbns_size);
+	} else if (strcmp(name, "route-add-cmd") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "route-add-cmd", route_add_cmd))
+			READ_STRING(config->route_add_cmd);
+	} else if (strcmp(name, "route-del-cmd") == 0) {
+		if (!WARN_ON_VHOST(vhost->name, "route-del-cmd", route_del_cmd))
+			READ_STRING(config->route_del_cmd);
+	} else if (strcmp(name, "config-per-user") == 0) {
+		READ_STRING(config->per_user_dir);
+	} else if (strcmp(name, "config-per-group") == 0) {
+		READ_STRING(config->per_group_dir);
+	} else if (strcmp(name, "expose-iroutes") == 0) {
+		READ_TF(vhost->expose_iroutes);
+	} else if (strcmp(name, "default-user-config") == 0) {
+		READ_STRING(config->default_user_conf);
+	} else if (strcmp(name, "default-group-config") == 0) {
+		READ_STRING(config->default_group_conf);
+	} else {
+		if (reload == 0)
+			fprintf(stderr, WARNSTR"skipping unknown option '%s'\n", name);
 	}
 
-	if (config->network.ipv6_subnet_prefix == 0) {
-		config->network.ipv6_subnet_prefix = 128;
-	} else if (config->network.ipv6_prefix >= config->network.ipv6_subnet_prefix) {
-		fprintf(stderr, ERRSTR"the subnet prefix (%u) cannot be smaller or equal to network's (%u)\n", 
-				config->network.ipv6_subnet_prefix, config->network.ipv6_prefix);
+ exit:
+	talloc_free(value);
+	return 0;
+}
+
+enum {
+	CFG_FLAG_RELOAD = (1<<0),
+	CFG_FLAG_SECMOD = (1<<1)
+};
+
+static void parse_cfg_file(void *pool, const char *file, struct list_head *head,
+			   unsigned flags)
+{
+	int ret;
+	struct cfg_st *config;
+	struct ini_ctx_st ctx;
+	vhost_cfg_st *vhost = NULL;
+	vhost_cfg_st *defvhost;
+
+	memset(&ctx, 0, sizeof(ctx));
+	ctx.file = file;
+	ctx.reload = (flags&CFG_FLAG_RELOAD)?1:0;
+	ctx.head = head;
+
+	/* parse configuration
+	 */
+	ret = ini_parse(file, cfg_ini_handler, &ctx);
+	if (ret < 0 && file != NULL && strcmp(file, DEFAULT_CFG_FILE) == 0)
+		ret = ini_parse(OLD_DEFAULT_CFG_FILE, cfg_ini_handler, &ctx);
+
+	if (ret < 0) {
+		fprintf(stderr, ERRSTR"cannot load config file %s\n", file);
 		exit(1);
 	}
 
-	READ_MULTI_LINE("custom-header", config->custom_header, config->custom_header_size);
-	READ_MULTI_LINE("split-dns", config->split_dns, config->split_dns_size);
+	/* apply configuration not yet applied.
+	 * We start from the last, which is the default server (firstly
+	 * added).
+	 */
+	list_for_each_rev(head, vhost, list) {
+		config = vhost->perm_config.config;
 
-	READ_MULTI_LINE("route", config->network.routes, config->network.routes_size);
+		if (vhost->auth_init == 0) {
+			if (vhost->auth_size == 0) {
+				fprintf(stderr, ERRSTR"%sthe 'auth' configuration option was not specified!\n", PREFIX_VHOST(vhost));
+				exit(1);
+			}
+
+			figure_auth_funcs(vhost, PREFIX_VHOST(vhost), &vhost->perm_config, vhost->auth, vhost->auth_size, 1);
+			figure_auth_funcs(vhost, PREFIX_VHOST(vhost), &vhost->perm_config, vhost->eauth, vhost->eauth_size, 0);
+
+			figure_acct_funcs(vhost, PREFIX_VHOST(vhost), &vhost->perm_config, vhost->acct);
+
+			vhost->auth_init = 1;
+		}
+
+		if (vhost->auto_select_group != 0 && vhost->perm_config.auth[0].amod != NULL && vhost->perm_config.auth[0].amod->group_list != NULL) {
+			vhost->perm_config.auth[0].amod->group_list(config, vhost->perm_config.auth[0].additional, &config->group_list, &config->group_list_size);
+		}
+
+		if (vhost->expose_iroutes != 0) {
+			load_iroutes(config);
+		}
+
+		if (vhost->name)
+			defvhost = default_vhost(head);
+		else
+			defvhost = NULL;
+
+		/* this check copies mandatory fields from default vhost if needed */
+		check_cfg(vhost, defvhost, ctx.reload);
+
+		/* the following are only useful in main process */
+		if (!(flags & CFG_FLAG_SECMOD)) {
+			tls_load_files(NULL, vhost);
+			tls_load_prio(NULL, vhost);
+			tls_reload_crl(NULL, vhost, 1);
+		}
+
+#ifdef HAVE_GSSAPI
+		if (vhost->urlfw_size > 0) {
+			parse_kkdcp(config, vhost->urlfw, vhost->urlfw_size);
+			talloc_free(vhost->urlfw);
+			vhost->urlfw = NULL;
+		}
+#endif
+		fprintf(stderr, NOTESTR"%ssetting '%s' as supplemental config option\n",
+			PREFIX_VHOST(vhost),
+			sup_config_name(vhost->perm_config.sup_config_type));
+	}
+}
+
+
+/* sanity checks on config */
+static void check_cfg(vhost_cfg_st *vhost, vhost_cfg_st *defvhost, unsigned silent)
+{
+	unsigned j, i;
+	struct cfg_st *config;
+
+	config = vhost->perm_config.config;
+
+	if (vhost->perm_config.auth[0].enabled == 0) {
+		fprintf(stderr, ERRSTR"%sno authentication method was specified!\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (vhost->perm_config.socket_file_prefix == NULL) {
+		if (vhost->name) {
+			vhost->perm_config.socket_file_prefix = talloc_strdup(vhost, defvhost->perm_config.socket_file_prefix);
+		} else {
+			/* The 'socket-file' is not mandatory on main server */
+			fprintf(stderr, ERRSTR"%sthe 'socket-file' configuration option must be specified!\n", PREFIX_VHOST(vhost));
+			exit(1);
+		}
+	}
+
+	if (vhost->perm_config.port == 0 && vhost->perm_config.unix_conn_file == NULL) {
+		if (defvhost) {
+			if (vhost->perm_config.port)
+				vhost->perm_config.port = vhost->perm_config.port;
+			else if (vhost->perm_config.unix_conn_file)
+				vhost->perm_config.unix_conn_file = talloc_strdup(vhost, vhost->perm_config.unix_conn_file);
+		} else {
+			fprintf(stderr, ERRSTR"%sthe tcp-port option is mandatory!\n", PREFIX_VHOST(vhost));
+			exit(1);
+		}
+	}
+
+	if (vhost->perm_config.cert_size == 0 || vhost->perm_config.key_size == 0) {
+		fprintf(stderr, ERRSTR"%sthe 'server-cert' and 'server-key' configuration options must be specified!\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->network.ipv4 == NULL && config->network.ipv6 == NULL) {
+		fprintf(stderr, ERRSTR"%sno ipv4-network or ipv6-network options set.\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->network.ipv4 != NULL && config->network.ipv4_netmask == NULL) {
+		fprintf(stderr, ERRSTR"%sno mask found for IPv4 network.\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->network.ipv6 != NULL && config->network.ipv6_prefix == 0) {
+		fprintf(stderr, ERRSTR"%sno prefix found for IPv6 network.\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->banner && strlen(config->banner) > MAX_BANNER_SIZE) {
+		fprintf(stderr, ERRSTR"%sbanner size is too long\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (vhost->perm_config.cert_size != vhost->perm_config.key_size) {
+		fprintf(stderr, ERRSTR"%sthe specified number of keys doesn't match the certificates\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if ((vhost->perm_config.auth[0].type & AUTH_TYPE_CERTIFICATE) && vhost->perm_config.auth_methods == 1) {
+		if (config->cisco_client_compat == 0)
+			config->cert_req = GNUTLS_CERT_REQUIRE;
+		else
+			config->cert_req = GNUTLS_CERT_REQUEST;
+	} else {
+		unsigned i;
+		for (i=0;i<vhost->perm_config.auth_methods;i++) {
+			if (vhost->perm_config.auth[i].type & AUTH_TYPE_CERTIFICATE) {
+				config->cert_req = GNUTLS_CERT_REQUEST;
+				break;
+			}
+		}
+	}
+
+	if (config->cert_req != 0 && config->cert_user_oid == NULL) {
+		fprintf(stderr, ERRSTR"%sa certificate is requested by the option 'cert-user-oid' is not set\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->cert_req != 0 && config->cert_user_oid != NULL) {
+		if (!c_isdigit(config->cert_user_oid[0]) && strcmp(config->cert_user_oid, "SAN(rfc822name)") != 0) {
+			fprintf(stderr, ERRSTR"%sthe option 'cert-user-oid' has a unsupported value\n", PREFIX_VHOST(vhost));
+			exit(1);
+		}
+	}
+
+	if (vhost->perm_config.unix_conn_file != NULL && (config->cert_req != 0)) {
+		if (config->listen_proxy_proto == 0) {
+			fprintf(stderr, ERRSTR"%sthe option 'listen-clear-file' cannot be combined with 'auth=certificate'\n", PREFIX_VHOST(vhost));
+			exit(1);
+		}
+	}
+
+	if (vhost->perm_config.cert && vhost->perm_config.cert_hash == NULL) {
+		vhost->perm_config.cert_hash = calc_sha1_hash(vhost->pool, vhost->perm_config.cert[0], 1);
+	}
+
+	if (config->xml_config_file) {
+		config->xml_config_hash = calc_sha1_hash(vhost->pool, config->xml_config_file, 0);
+		if (config->xml_config_hash == NULL && vhost->perm_config.chroot_dir != NULL) {
+			char path[_POSIX_PATH_MAX];
+
+			snprintf(path, sizeof(path), "%s/%s", vhost->perm_config.chroot_dir, config->xml_config_file);
+			config->xml_config_hash = calc_sha1_hash(vhost->pool, path, 0);
+
+			if (config->xml_config_hash == NULL) {
+				fprintf(stderr, ERRSTR"%scannot open file '%s'\n", PREFIX_VHOST(vhost), path);
+				exit(1);
+			}
+		}
+		if (config->xml_config_hash == NULL) {
+			fprintf(stderr, ERRSTR"%scannot open file '%s'\n", PREFIX_VHOST(vhost), config->xml_config_file);
+			exit(1);
+		}
+	}
+
+	if (config->priorities == NULL) {
+		/* on vhosts assign the main host priorities */
+		if (defvhost) {
+			config->priorities = talloc_strdup(config, defvhost->perm_config.config->priorities);
+		} else {
+			config->priorities = talloc_strdup(config, "NORMAL:%SERVER_PRECEDENCE:%COMPAT");
+		}
+	}
+
+	if (vhost->perm_config.occtl_socket_file == NULL)
+		vhost->perm_config.occtl_socket_file = talloc_strdup(vhost, OCCTL_UNIX_SOCKET);
+
+
+	if (config->network.ipv6_prefix && config->network.ipv6_prefix >= config->network.ipv6_subnet_prefix) {
+		fprintf(stderr, ERRSTR"%sthe subnet prefix (%u) cannot be smaller or equal to network's (%u)\n",
+				PREFIX_VHOST(vhost), config->network.ipv6_subnet_prefix, config->network.ipv6_prefix);
+		exit(1);
+	}
+
+	if (!vhost->name && config->network.name[0] == 0) {
+		fprintf(stderr, ERRSTR"%sthe 'device' configuration option must be specified!\n", PREFIX_VHOST(vhost));
+		exit(1);
+	}
+
+	if (config->mobile_dpd == 0)
+		config->mobile_dpd = config->dpd;
+
+	if (config->cisco_client_compat) {
+		if (!config->dtls_legacy && !silent) {
+			fprintf(stderr, NOTESTR"%sthe cisco-client-compat option implies dtls-legacy = true; enabling\n", PREFIX_VHOST(vhost));
+		}
+		config->dtls_legacy = 1;
+	}
+
+	if (vhost->perm_config.unix_conn_file) {
+		if (config->dtls_psk && !silent) {
+			fprintf(stderr, NOTESTR"%s'dtls-psk' cannot be combined with unix socket file\n", PREFIX_VHOST(vhost));
+		}
+		config->dtls_psk = 0;
+	}
+
+	if (config->match_dtls_and_tls) {
+		if (config->dtls_legacy) {
+			fprintf(stderr, ERRSTR"%s'match-tls-dtls-ciphers' cannot be applied when 'dtls-legacy' or 'cisco-client-compat' is on\n", PREFIX_VHOST(vhost));
+			exit(1);
+		}
+	}
+
+	if (config->mobile_idle_timeout == (unsigned)-1)
+		config->mobile_idle_timeout = config->idle_timeout;
+
+	if (config->no_compress_limit < MIN_NO_COMPRESS_LIMIT)
+		config->no_compress_limit = MIN_NO_COMPRESS_LIMIT;
+
+#if !defined(HAVE_LIBSECCOMP)
+	if (config->isolate != 0 && !silent) {
+		fprintf(stderr, ERRSTR"%s'isolate-workers' is set to true, but not compiled with seccomp or Linux namespaces support\n", PREFIX_VHOST(vhost));
+	}
+#endif
+
 	for (j=0;j<config->network.routes_size;j++) {
 		if (ip_route_sanity_check(config->network.routes, &config->network.routes[j]) != 0)
 			exit(1);
 
 		if (strcmp(config->network.routes[j], "0.0.0.0/0") == 0 ||
 		    strcmp(config->network.routes[j], "default") == 0) {
-		    	/* set default route */
+			/* set default route */
 			for (i=0;i<j;i++)
 				talloc_free(config->network.routes[i]);
 			config->network.routes_size = 0;
@@ -1053,239 +1348,183 @@ size_t urlfw_size = 0;
 		}
 	}
 
-	READ_MULTI_LINE("no-route", config->network.no_routes, config->network.no_routes_size);
 	for (j=0;j<config->network.no_routes_size;j++) {
 		if (ip_route_sanity_check(config->network.no_routes, &config->network.no_routes[j]) != 0)
 			exit(1);
 	}
 
-	READ_STRING("default-select-group", config->default_select_group);
-	READ_TF("auto-select-group", auto_select_group, 0);
-
-	if (auto_select_group != 0 && perm_config->auth[0].amod != NULL && perm_config->auth[0].amod->group_list != NULL) {
-		perm_config->auth[0].amod->group_list(config, perm_config->auth[0].additional, &config->group_list, &config->group_list_size);
-	} else {
-		READ_MULTI_BRACKET_LINE("select-group",
-				config->group_list,
-				config->friendly_group_list,
-				config->group_list_size);
-	}
-
-	READ_MULTI_LINE("dns", config->network.dns, config->network.dns_size);
-	if (config->network.dns_size == 0) {
-		/* try the aliases */
-		READ_MULTI_LINE("ipv6-dns", config->network.dns, config->network.dns_size);
-		READ_MULTI_LINE("ipv4-dns", config->network.dns, config->network.dns_size);
-	}
-
 	for (j=0;j<config->network.dns_size;j++) {
 		if (strcmp(config->network.dns[j], "local") == 0) {
-			fprintf(stderr, ERRSTR"the 'local' DNS keyword is no longer supported.\n");
+			fprintf(stderr, ERRSTR"%sthe 'local' DNS keyword is no longer supported.\n", PREFIX_VHOST(vhost));
 			exit(1);
 		}
 	}
-
-	READ_MULTI_LINE("nbns", config->network.nbns, config->network.nbns_size);
-	if (config->network.nbns_size == 0) {
-		/* try the aliases */
-		READ_MULTI_LINE("ipv6-nbns", config->network.nbns, config->network.nbns_size);
-		READ_MULTI_LINE("ipv4-nbns", config->network.nbns, config->network.nbns_size);
-	}
-
-	READ_STRING("route-add-cmd", config->route_add_cmd);
-	READ_STRING("route-del-cmd", config->route_del_cmd);
-	READ_STRING("config-per-user", config->per_user_dir);
-	READ_STRING("config-per-group", config->per_group_dir);
 
 	if (config->per_user_dir || config->per_group_dir) {
-		if (perm_config->sup_config_type != SUP_CONFIG_FILE) {
-			fprintf(stderr, ERRSTR"specified config-per-user or config-per-group but supplemental config is '%s'\n",
-				sup_config_name(perm_config->sup_config_type));
+		if (vhost->perm_config.sup_config_type != SUP_CONFIG_FILE) {
+			fprintf(stderr, ERRSTR"%sspecified config-per-user or config-per-group but supplemental config is '%s'\n",
+				PREFIX_VHOST(vhost), sup_config_name(vhost->perm_config.sup_config_type));
 			exit(1);
 		}
 	}
 
-	if (config->per_user_dir) {
-		READ_TF("expose-iroutes", i, 0);
-		if (i != 0) {
-			load_iroutes(config);
-		}
-	}
-
-	READ_STRING("default-user-config", config->default_user_conf);
-	READ_STRING("default-group-config", config->default_group_conf);
-
-	fprintf(stderr, NOTESTR"setting '%s' as supplemental config option\n", sup_config_name(perm_config->sup_config_type));
-
-	optionUnloadNested(pov);
 }
 
+#define OPT_NO_CHDIR 1
+static const struct option long_options[] = {
+	{"debug", 1, 0, 'd'},
+	{"config", 1, 0, 'c'},
+	{"pid-file", 1, 0, 'p'},
+	{"test-config", 0, 0, 't'},
+	{"foreground", 0, 0, 'f'},
+	{"no-chdir", 0, 0, OPT_NO_CHDIR},
+	{"help", 0, 0, 'h'},
+	{"version", 0, 0, 'v'},
+	{NULL, 0, 0, 0}
+};
 
-/* sanity checks on config */
-static void check_cfg(struct perm_cfg_st *perm_config)
+static
+void usage(void)
 {
-	if (perm_config->config->network.ipv4 == NULL && perm_config->config->network.ipv6 == NULL) {
-		fprintf(stderr, ERRSTR"no ipv4-network or ipv6-network options set.\n");
-		exit(1);
-	}
+	fprintf(stderr, "ocserv - OpenConnect VPN server\n");
+	fprintf(stderr, "Usage:  ocserv [ -<flag> [<val>] | --<name>[{=| }<val>] ]...\n\n");
 
-	if (perm_config->config->network.ipv4 != NULL && perm_config->config->network.ipv4_netmask == NULL) {
-		fprintf(stderr, ERRSTR"no mask found for IPv4 network.\n");
-		exit(1);
-	}
+	fprintf(stderr, "   -f, --foreground           Do not fork into background\n");
+	fprintf(stderr, "   -d, --debug=num            Enable verbose network debugging information\n");
+	fprintf(stderr, "				- it must be in the range:\n");
+	fprintf(stderr, "				  0 to 9999\n");
+	fprintf(stderr, "   -c, --config=file          Configuration file for the server\n");
+	fprintf(stderr, "				- file must exist\n");
+	fprintf(stderr, "   -t, --test-config          Test the provided configuration file\n");
+	fprintf(stderr, "       --no-chdir             Do not perform a chdir on daemonize\n");
+	fprintf(stderr, "   -p, --pid-file=file        Specify pid file for the server\n");
+	fprintf(stderr, "   -v, --version              output version information and exit\n");
+	fprintf(stderr, "   -h, --help                 display extended usage information and exit\n\n");
 
-	if (perm_config->config->network.ipv6 != NULL && perm_config->config->network.ipv6_prefix == 0) {
-		fprintf(stderr, ERRSTR"no prefix found for IPv6 network.\n");
-		exit(1);
-	}
+	fprintf(stderr, "Openconnect VPN server (ocserv) is a VPN server compatible with the\n");
+	fprintf(stderr, "openconnect VPN client.  It follows the TLS and DTLS-based AnyConnect VPN\n");
+	fprintf(stderr, "protocol which is used by several CISCO routers.\n\n");
 
-	if (perm_config->config->banner && strlen(perm_config->config->banner) > MAX_BANNER_SIZE) {
-		fprintf(stderr, ERRSTR"banner size is too long\n");
-		exit(1);
-	}
+	fprintf(stderr, "Please send bug reports to:  "PACKAGE_BUGREPORT"\n");
+}
 
-	if (perm_config->cert_size != perm_config->key_size) {
-		fprintf(stderr, ERRSTR"the specified number of keys doesn't match the certificates\n");
-		exit(1);
-	}
+int cmd_parser (void *pool, int argc, char **argv, struct list_head *head)
+{
+	unsigned test_only = 0;
+	int c;
+	vhost_cfg_st *vhost;
 
-	if (perm_config->auth[0].type & AUTH_TYPE_CERTIFICATE && perm_config->auth_methods == 1) {
-		if (perm_config->config->cisco_client_compat == 0)
-			perm_config->config->cert_req = GNUTLS_CERT_REQUIRE;
-		else
-			perm_config->config->cert_req = GNUTLS_CERT_REQUEST;
-	} else {
-		unsigned i;
-		for (i=0;i<perm_config->auth_methods;i++) {
-			if (perm_config->auth[i].type & AUTH_TYPE_CERTIFICATE) {
-				perm_config->config->cert_req = GNUTLS_CERT_REQUEST;
+	vhost = vhost_add(pool, head, NULL, 0);
+	assert(vhost != NULL);
+
+	while (1) {
+		c = getopt_long(argc, argv, "d:c:p:ftvh", long_options, NULL);
+		if (c == -1)
+			break;
+
+		switch(c) {
+			case 'f':
+				vhost->perm_config.foreground = 1;
 				break;
-			}
+			case 'p':
+				strlcpy(pid_file, optarg, sizeof(pid_file));
+				break;
+			case 'c':
+				strlcpy(cfg_file, optarg, sizeof(cfg_file));
+				break;
+			case 'd':
+				vhost->perm_config.debug = atoi(optarg);
+				break;
+			case 't':
+				test_only = 1;
+				break;
+			case OPT_NO_CHDIR:
+				vhost->perm_config.no_chdir = 1;
+				break;
+			case 'h':
+				usage();
+				exit(0);
+			case 'v':
+				print_version();
+				exit(0);
 		}
 	}
 
-	if (perm_config->config->cert_req != 0 && perm_config->config->cert_user_oid == NULL) {
-		fprintf(stderr, ERRSTR"a certificate is requested by the option 'cert-user-oid' is not set\n");
+	if (optind != argc) {
+		fprintf(stderr, ERRSTR"no additional command line options are allowed\n\n");
 		exit(1);
 	}
 
-	if (perm_config->config->cert_req != 0 && perm_config->config->cert_user_oid != NULL) {
-		if (!c_isdigit(perm_config->config->cert_user_oid[0]) && strcmp(perm_config->config->cert_user_oid, "SAN(rfc822name)") != 0) {
-			fprintf(stderr, ERRSTR"the option 'cert-user-oid' has a unsupported value\n");
-			exit(1);
-		}
-	}
-
-	if (perm_config->unix_conn_file != NULL && (perm_config->config->cert_req != 0)) {
-		if (perm_config->config->listen_proxy_proto == 0) {
-			fprintf(stderr, ERRSTR"the option 'listen-clear-file' cannot be combined with 'auth=certificate'\n");
-			exit(1);
-		}
-	}
-
-	if (perm_config->cert && perm_config->cert_hash == NULL) {
-		perm_config->cert_hash = calc_sha1_hash(perm_config, perm_config->cert[0], 1);
-	}
-
-	if (perm_config->config->xml_config_file) {
-		perm_config->config->xml_config_hash = calc_sha1_hash(perm_config->config, perm_config->config->xml_config_file, 0);
-		if (perm_config->config->xml_config_hash == NULL && perm_config->chroot_dir != NULL) {
-			char path[_POSIX_PATH_MAX];
-
-			snprintf(path, sizeof(path), "%s/%s", perm_config->chroot_dir, perm_config->config->xml_config_file);
-			perm_config->config->xml_config_hash = calc_sha1_hash(perm_config->config, path, 0);
-
-			if (perm_config->config->xml_config_hash == NULL) {
-				fprintf(stderr, ERRSTR"cannot open file '%s'\n", path);
-				exit(1);
-			}
-		}
-		if (perm_config->config->xml_config_hash == NULL) {
-			fprintf(stderr, ERRSTR"cannot open file '%s'\n", perm_config->config->xml_config_file);
-			exit(1);
-		}
-	}
-
-	if (perm_config->config->keepalive == 0)
-		perm_config->config->keepalive = 3600;
-
-	if (perm_config->config->dpd == 0)
-		perm_config->config->dpd = 60;
-
-	if (perm_config->config->priorities == NULL)
-		perm_config->config->priorities = talloc_strdup(perm_config->config, "NORMAL:%SERVER_PRECEDENCE:%COMPAT");
-}
-
-int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config)
-{
-	*config = talloc_zero(pool, struct perm_cfg_st);
-	if (*config == NULL)
-		exit(1);
-
-	optionProcess( &ocservOptions, argc, argv);
-  
-	if (HAVE_OPT(FOREGROUND))
-		(*config)->foreground = 1;
-
-	if (HAVE_OPT(PID_FILE)) {
-		strlcpy(pid_file, OPT_ARG(PID_FILE), sizeof(pid_file));
-	}
-
-	if (HAVE_OPT(DEBUG))
-		(*config)->debug = OPT_VALUE_DEBUG;
-
-	if (HAVE_OPT(CONFIG)) {
-		strlcpy(cfg_file, OPT_ARG(CONFIG), sizeof(cfg_file));
-	} else if (access(cfg_file, R_OK) != 0) {
-		fprintf(stderr, "%s -c [config]\nUse %s --help for more information.\n", argv[0], argv[0]);
+	if (access(cfg_file, R_OK) != 0) {
+		fprintf(stderr, ERRSTR"cannot access config file: %s\n", cfg_file);
+		fprintf(stderr, "Usage: %s -c [config]\nUse %s --help for more information.\n", argv[0], argv[0]);
 		exit(1);
 	}
 
-	parse_cfg_file(pool, cfg_file, *config, 0);
+	parse_cfg_file(pool, cfg_file, head, 0);
 
-	check_cfg(*config);
-
-	if (HAVE_OPT(TEST_CONFIG))
+	if (test_only)
 		exit(0);
 
 	return 0;
 
 }
 
-static void archive_cfg(struct perm_cfg_st* perm_config)
+static void archive_cfg(struct list_head *head)
 {
 	attic_entry_st *e;
+	struct vhost_cfg_st* vhost = NULL;
 
-	/* we don't clear anything as it may be referenced by some
-	 * client (proc_st). We move everything to attic and
-	 * once nothing is in use we clear that */
+	list_for_each(head, vhost, list) {
+		/* we don't clear anything as it may be referenced by some
+		 * client (proc_st). We move everything to attic and
+		 * once nothing is in use we clear that */
 
-	e = talloc(perm_config, attic_entry_st);
-	if (e == NULL) {
-		/* we leak, but better than crashing */
-		return;
-	}
+		e = talloc(vhost, attic_entry_st);
+		if (e == NULL) {
+			/* we leak, but better than crashing */
+			return;
+		}
 
-	e->usage_count = perm_config->config->usage_count;
+		e->usage_count = vhost->perm_config.config->usage_count;
 
-	/* we rely on talloc doing that recursively */
-	talloc_steal(e, perm_config->config);
-	perm_config->config = NULL;
+		/* we rely on talloc doing that recursively */
+		talloc_steal(e, vhost->perm_config.config);
+		vhost->perm_config.config = NULL;
 
-	if (e->usage_count == NULL || *e->usage_count == 0) {
-		talloc_free(e);
-	} else {
-		list_add(&perm_config->attic, &e->list);
+		if (e->usage_count == NULL || *e->usage_count == 0) {
+			talloc_free(e);
+		} else {
+			list_add(&vhost->perm_config.attic, &e->list);
+		}
 	}
 
 	return;
 }
 
-void clear_cfg(struct perm_cfg_st* perm_config)
+static void clear_cfg(struct list_head *head)
 {
-	/* we rely on talloc doing that recursively */
-	talloc_free(perm_config->config);
-	perm_config->config = NULL;
+	vhost_cfg_st *cpos = NULL, *ctmp;
+
+	list_for_each_safe(head, cpos, ctmp, list) {
+		/* we rely on talloc freeing recursively */
+		talloc_free(cpos->perm_config.config);
+		cpos->perm_config.config = NULL;
+	}
+
+	return;
+}
+
+void clear_vhosts(struct list_head *head)
+{
+	vhost_cfg_st *vhost = NULL, *ctmp;
+
+	list_for_each_safe(head, vhost, ctmp, list) {
+		tls_vhost_deinit(vhost);
+		/* we rely on talloc freeing recursively */
+		talloc_free(vhost->perm_config.config);
+		vhost->perm_config.config = NULL;
+	}
 
 	return;
 }
@@ -1302,11 +1541,11 @@ static void append(const char *option)
 	fprintf(stderr, "%s", option);
 }
 
-void print_version(tOptions *opts, tOptDesc *desc)
+static void print_version(void)
 {
 	const char *p;
 
-	fputs(OCSERV_FULL_VERSION, stderr);
+	fputs(PACKAGE_STRING, stderr);
 	fprintf(stderr, "\n\nCompiled with: ");
 #ifdef HAVE_LIBSECCOMP
 	append("seccomp");
@@ -1326,9 +1565,7 @@ void print_version(tOptions *opts, tOptDesc *desc)
 #ifdef HAVE_PAM
 	append("PAM");
 #endif
-#ifdef HAVE_PKCS11
 	append("PKCS#11");
-#endif
 #ifdef ANYCONNECT_CLIENT_COMPAT
 	append("AnyConnect");
 #endif
@@ -1340,28 +1577,38 @@ void print_version(tOptions *opts, tOptDesc *desc)
 	} else {
 		fprintf(stderr, "GnuTLS version: %s\n", p);
 	}
-
-	exit(0);
 }
 
 
-void reload_cfg_file(void *pool, struct perm_cfg_st* perm_config, unsigned archive)
+void reload_cfg_file(void *pool, struct list_head *configs, unsigned sec_mod)
 {
-	if (archive)
-		archive_cfg(perm_config);
+	struct vhost_cfg_st* vhost = NULL;
+	unsigned flags = CFG_FLAG_RELOAD;
+
+	if (sec_mod)
+		flags |= CFG_FLAG_SECMOD;
+
+	/* Archive or clear any non-permanent configs */
+	if (!sec_mod)
+		archive_cfg(configs);
 	else
-		clear_cfg(perm_config);
+		clear_cfg(configs);
 
-	parse_cfg_file(pool, cfg_file, perm_config, 1);
+	/* Create new config structures and apply defaults */
+	list_for_each(configs, vhost, list) {
+		if (vhost->perm_config.config == NULL)
+			cfg_new(vhost, 1);
+	}
 
-	check_cfg(perm_config);
+	/* parse the config again */
+	parse_cfg_file(pool, cfg_file, configs, flags);
 
 	return;
 }
 
 void write_pid_file(void)
 {
-FILE* fp;
+	FILE* fp;
 
 	if (pid_file[0]==0)
 		return;
@@ -1384,48 +1631,45 @@ void remove_pid_file(void)
 	remove(pid_file);
 }
 
-int add_multi_line_val(void *pool, const char *name, char ***s_name, size_t *num,
-		       tOptionValue const *pov,
-		       const tOptionValue *val)
+int _add_multi_line_val(void *pool, char ***varname, size_t *num,
+		        const char *value)
 {
 	unsigned _max = DEFAULT_CONFIG_ENTRIES;
 	void *tmp;
 
-	if (*s_name == NULL) {
+	if (*varname == NULL) {
 		*num = 0;
-		*s_name = talloc_array(pool, char*, _max);
-		if (*s_name == NULL)
+		*varname = talloc_array(pool, char*, _max);
+		if (*varname == NULL)
 			return -1;
 	}
 
-	do {
-	        if (val && strcmp(val->pzName, name)!=0)
-			continue;
+	if (*num >= _max-1) {
+		tmp = talloc_realloc(pool, *varname, char*, (*num)+2);
+		if (tmp == NULL)
+			return -1;
+		*varname = tmp;
+	}
 
-	        if (*num >= _max-1) {
-	        	_max += 128;
-	        	tmp = talloc_realloc(pool, *s_name, char*, _max);
-			if (tmp == NULL)
-				return -1;
-			*s_name = tmp;
-	        }
+	(*varname)[*num] = talloc_strdup(*varname, value);
+	(*num)++;
 
-	        (*s_name)[*num] = talloc_strdup(*s_name, val->v.strVal);
-	        (*num)++;
-      } while((val = optionNextValue(pov, val)) != NULL);
-      (*s_name)[*num] = NULL;
-      return 0;
+	(*varname)[*num] = NULL;
+	return 0;
 }
 
-void clear_old_configs(struct perm_cfg_st* config)
+void clear_old_configs(struct list_head *head)
 {
 	attic_entry_st *e = NULL, *pos;
+	vhost_cfg_st *cpos = NULL;
 
-	/* go through the attic and clear old configurations if unused */
-	list_for_each_safe(&config->attic, e, pos, list) {
-		if (*e->usage_count == 0) {
-			list_del(&e->list);
-			talloc_free(e);
+	list_for_each(head, cpos, list) {
+		/* go through the attic and clear old configurations if unused */
+		list_for_each_safe(&cpos->perm_config.attic, e, pos, list) {
+			if (*e->usage_count == 0) {
+				list_del(&e->list);
+				talloc_free(e);
+			}
 		}
 	}
 }

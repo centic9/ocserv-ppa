@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2018 Nikos Mavrogiannopoulos
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * Author: Nikos Mavrogiannopoulos
@@ -34,6 +34,8 @@
 #include <sys/uio.h>
 #include <ev.h>
 
+#include "vhost.h"
+
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
 # include <limits.h>
 # define SOL_IP IPPROTO_IP
@@ -47,9 +49,9 @@ extern char **saved_argv;
 extern struct ev_loop *loop;
 extern ev_timer maintainance_watcher;
 
-#define MAIN_MAINTAINANCE_TIME (900)
+#define MAIN_MAINTENANCE_TIME (900)
 
-int cmd_parser (void *pool, int argc, char **argv, struct perm_cfg_st** config);
+int cmd_parser (void *pool, int argc, char **argv, struct list_head *head);
 
 struct listener_st {
 	ev_io io;
@@ -98,8 +100,12 @@ typedef struct proc_st {
 	struct ip_lease_st *ipv6;
 	unsigned leases_in_use; /* someone else got our IP leases */
 
-	struct sockaddr_storage remote_addr; /* peer address */
+	struct sockaddr_storage remote_addr; /* peer address (CSTP) */
 	socklen_t remote_addr_len;
+	/* It can happen that the peer's DTLS stream comes through a different
+	 * address. Most likely that's due to interception of the initial TLS/CSTP session */
+	struct sockaddr_storage dtls_remote_addr; /* peer address (DTLS) */
+	socklen_t dtls_remote_addr_len;
 	struct sockaddr_storage our_addr; /* our address */
 	socklen_t our_addr_len;
 
@@ -149,6 +155,9 @@ typedef struct proc_st {
 	/* The following we rely on talloc for deallocation */
 	GroupCfgSt *config; /* custom user/group config */
 	int *config_usage_count; /* points to s->config->usage_count */
+	/* pointer to perm_cfg - set after we know the virtual host. As
+	 * vhosts never get deleted, this pointer is always valid */
+	vhost_cfg_st *vhost;
 } proc_st;
 
 struct ip_lease_db_st {
@@ -166,6 +175,7 @@ struct script_list_st {
 
 struct proc_hash_db_st {
 	struct htable *db_ip;
+	struct htable *db_dtls_ip;
 	struct htable *db_dtls_id;
 	struct htable *db_sid;
 	unsigned total;
@@ -201,15 +211,13 @@ struct main_stats_st {
 };
 
 typedef struct main_server_st {
-	struct cfg_st *config; /* pointer inside perm_config */
-	struct perm_cfg_st *perm_config;
-	
+	/* virtual hosts are only being added to that list, never removed */
+	struct list_head *vconfig;
+
 	struct ip_lease_db_st ip_leases;
 
 	struct htable *ban_db;
 
-	tls_st *creds;
-	
 	struct listen_list_st listen_list;
 	struct proc_list_st proc_list;
 	struct script_list_st script_list;
@@ -236,6 +244,7 @@ typedef struct main_server_st {
 	int sec_mod_fd; /* messages are sent and received async */
 	int sec_mod_fd_sync; /* messages are send in a sync order (ping-pong). Only main sends. */
 	void *main_pool; /* talloc main pool */
+	void *config_pool; /* talloc config pool */
 
 	/* used as temporary buffer (currently by forward_udp_to_owner) */
 	uint8_t msg_buffer[MAX_MSG_SIZE];
@@ -336,6 +345,11 @@ int send_socket_msg_to_worker(main_server_st* s, struct proc_st* proc, uint8_t c
 	mslog(s, proc, LOG_DEBUG, "sending (socket) message %u to worker", (unsigned)cmd);
 	return send_socket_msg(proc, proc->fd, cmd, socketfd, msg, get_size, pack);
 }
+
+int secmod_reload(main_server_st * s);
+
+const char *secmod_socket_file_name(struct perm_cfg_st *perm_config);
+void clear_vhosts(struct list_head *head);
 
 void request_reload(int signo);
 void request_stop(int signo);

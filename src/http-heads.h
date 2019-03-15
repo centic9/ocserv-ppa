@@ -1,4 +1,4 @@
-/* ANSI-C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf --global-table -t http-heads.gperf  */
 /* Computed positions: -k'3,8' */
 
@@ -26,7 +26,7 @@
       && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
       && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
 /* The character set is not based on ISO-646.  */
-#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
+#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
 #line 1 "http-heads.gperf"
@@ -35,12 +35,12 @@
 #line 6 "http-heads.gperf"
 struct http_headers_st { const char *name; unsigned id; };
 
-#define TOTAL_KEYWORDS 16
+#define TOTAL_KEYWORDS 17
 #define MIN_WORD_LENGTH 6
 #define MAX_WORD_LENGTH 34
 #define MIN_HASH_VALUE 6
-#define MAX_HASH_VALUE 37
-/* maximum key range = 32, duplicates = 0 */
+#define MAX_HASH_VALUE 40
+/* maximum key range = 35, duplicates = 0 */
 
 #ifdef __GNUC__
 __inline
@@ -50,38 +50,38 @@ inline
 #endif
 #endif
 static unsigned int
-hash (register const char *str, register unsigned int len)
+hash (register const char *str, register size_t len)
 {
   static const unsigned char asso_values[] =
     {
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38,  0, 20,  0,  5, 38,
-      10, 38, 15, 38, 38, 38, 38,  0, 38, 38,
-      38, 38, 38,  5, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38,  5, 38, 38, 38,  5, 38, 38, 38, 38,
-       0,  0, 38, 38,  0, 38,  0, 38, 38, 38,
-      38, 38,  0, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
-      38, 38, 38, 38, 38, 38
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      15, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41,  0, 20,  0,  5, 41,
+      10, 41, 15, 41, 41, 41, 41,  0, 41, 41,
+      41, 41, 41,  5, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41,  5, 41, 41, 41,  5, 41, 41, 41, 41,
+       0,  0, 41, 41,  0, 41,  0, 41, 41, 41,
+      41, 41,  0, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41
     };
-  register int hval = len;
+  register unsigned int hval = len;
 
   switch (hval)
     {
@@ -105,16 +105,16 @@ static const struct http_headers_st wordlist[] =
 #line 8 "http-heads.gperf"
     {"Cookie", HEADER_COOKIE},
     {""}, {""}, {""},
-#line 16 "http-heads.gperf"
+#line 17 "http-heads.gperf"
     {"X-CSTP-MTU", HEADER_CSTP_MTU},
     {""}, {""},
-#line 23 "http-heads.gperf"
+#line 24 "http-heads.gperf"
     {"Authorization", HEADER_AUTHORIZATION},
     {""},
 #line 12 "http-heads.gperf"
     {"Connection", HEADER_CONNECTION},
     {""}, {""}, {""},
-#line 17 "http-heads.gperf"
+#line 18 "http-heads.gperf"
     {"X-CSTP-Address-Type", HEADER_CSTP_ATYPE},
 #line 9 "http-heads.gperf"
     {"User-Agent", HEADER_USER_AGENT},
@@ -123,7 +123,7 @@ static const struct http_headers_st wordlist[] =
     {"X-CSTP-Accept-Encoding", HEADER_CSTP_ENCODING},
 #line 14 "http-heads.gperf"
     {"X-DTLS-CipherSuite", HEADER_DTLS_CIPHERSUITE},
-#line 22 "http-heads.gperf"
+#line 23 "http-heads.gperf"
     {"X-Support-HTTP-Auth", HEADER_SUPPORT_SPNEGO},
 #line 13 "http-heads.gperf"
     {"X-DTLS-Master-Secret", HEADER_MASTER_SECRET},
@@ -131,35 +131,32 @@ static const struct http_headers_st wordlist[] =
 #line 11 "http-heads.gperf"
     {"X-DTLS-Accept-Encoding", HEADER_DTLS_ENCODING},
     {""}, {""},
-#line 18 "http-heads.gperf"
+#line 19 "http-heads.gperf"
     {"X-CSTP-Hostname", HEADER_HOSTNAME},
     {""},
-#line 21 "http-heads.gperf"
+#line 22 "http-heads.gperf"
     {"X-AnyConnect-Identifier-Platform", HEADER_PLATFORM},
     {""},
-#line 20 "http-heads.gperf"
+#line 21 "http-heads.gperf"
     {"X-AnyConnect-Identifier-DeviceType", HEADER_DEVICE_TYPE},
-#line 15 "http-heads.gperf"
+#line 16 "http-heads.gperf"
     {"X-CSTP-Base-MTU", HEADER_CSTP_BASE_MTU},
     {""},
-#line 19 "http-heads.gperf"
-    {"X-CSTP-Full-IPv6-Capability", HEADER_FULL_IPV6}
+#line 20 "http-heads.gperf"
+    {"X-CSTP-Full-IPv6-Capability", HEADER_FULL_IPV6},
+    {""}, {""},
+#line 15 "http-heads.gperf"
+    {"X-DTLS12-CipherSuite", HEADER_DTLS12_CIPHERSUITE}
   };
 
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 const struct http_headers_st *
-in_word_set (register const char *str, register unsigned int len)
+in_word_set (register const char *str, register size_t len)
 {
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      register int key = hash (str, len);
+      register unsigned int key = hash (str, len);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register const char *s = wordlist[key].name;
 

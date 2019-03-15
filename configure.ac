@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.11.9], [nmav@gnutls.org])
+AC_INIT([ocserv], [0.12.2], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -15,21 +15,24 @@ AM_PROG_AR
 AM_PROG_CC_C_O
 AC_PROG_SED
 if [ test "$GCC" = "yes" ];then
-	CFLAGS="$CFLAGS -Wall -Wno-strict-aliasing"
+	CFLAGS="$CFLAGS -Wall -Wno-strict-aliasing -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers -Wno-implicit-fallthrough -Wno-stringop-truncation"
 fi
 AC_PATH_PROG(CTAGS, ctags, [:])
 AC_PATH_PROG(CSCOPE, cscope, [:])
-AC_CHECK_PROG([AUTOGEN], [autogen], [autogen], [:])
+AC_CHECK_PROG([RONN], [ronn], [ronn], [:])
 
-AX_CODE_COVERAGE
-
-if test x"$AUTOGEN" = "x:"; then
+if test x"$RONN" = "x:"; then
 	AC_MSG_WARN([[
 ***
-*** autogen not found. Will not link against libopts.
+*** ronn (ruby-ronn) was not found. Will not be able to generate manpages
 *** ]])
-enable_local_libopts=yes
+skip_manpages=yes
 fi
+
+AM_CONDITIONAL(SKIP_MANPAGES, test "$skip_manpages" = yes)
+
+AM_MAINTAINER_MODE([enable])
+AX_CODE_COVERAGE
 
 AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,
 [#include <sys/types.h>
@@ -47,10 +50,16 @@ AC_CHECK_SIZEOF([unsigned long])
 AC_C_BIGENDIAN
 
 PKG_CHECK_MODULES([LIBNETTLE], [nettle >= 2.7])
-PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 3.1.10])
-AC_CHECK_LIB(gnutls, gnutls_pkcs11_reinit, [
-AC_DEFINE([HAVE_PKCS11], [], [PKCS11 detected in gnutls])
-])
+PKG_CHECK_MODULES([LIBGNUTLS], [gnutls >= 3.3.0])
+
+warn_leak=no
+if $PKG_CONFIG --max-version=3.5.4 gnutls;then
+  if $PKG_CONFIG --atleast-version=3.3.99 gnutls || $PKG_CONFIG --max-version=3.3.24 gnutls; then
+    warn_leak=yes
+    AC_DEFINE([GNUTLS_BROKEN_CERTIFICATE_SET_KEY], [1],
+		  [gnutls has a broken gnutls_certificate_set_key()])
+  fi
+fi
 
 if ! $PKG_CONFIG --atleast-version=3.0 nettle; then
 	AC_DEFINE([NETTLE_OLD_BASE64_API], [1],
@@ -106,6 +115,12 @@ AC_ARG_WITH(docker-tests,
   docker_tests=yes)
 
 AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
+
+AC_ARG_WITH(nuttcp-tests,
+  AS_HELP_STRING([--without-nuttcp-tests], [disable any tests requiring nuttcp]),
+  nuttcp_tests=$withval,
+  nuttcp_tests=yes)
+AM_CONDITIONAL(ENABLE_NUTTCP_TESTS, test "x$nuttcp_tests" = xyes)
 
 AC_ARG_WITH(local-talloc,
   AS_HELP_STRING([--with-local-talloc], [use the included talloc library]),
@@ -193,6 +208,8 @@ have_liboath=yes],
 [have_liboath=no])
 fi
 
+AM_CONDITIONAL(HAVE_LIBOATH, test "x$have_liboath" != xno)
+
 have_glibc=no
 AC_LIB_HAVE_LINKFLAGS(c,, [
 #include <stdio.h>
@@ -234,12 +251,14 @@ fi
 
 PKG_CHECK_MODULES([CWRAP], [uid_wrapper, socket_wrapper], have_cwrap=yes, have_cwrap=no)
 PKG_CHECK_MODULES([CWRAP_PAM], [pam_wrapper], have_cwrap_pam=yes, have_cwrap_pam=no)
+PKG_CHECK_MODULES([CWRAP_NSS], [nss_wrapper], have_cwrap_nss=yes, have_cwrap_nss=no)
 
 if test "$have_cwrap" != no;then
 	AC_DEFINE([HAVE_CWRAP], 1, [Enable testing with cwrap])
 fi
 AM_CONDITIONAL(HAVE_CWRAP, test "x$have_cwrap" != xno)
 AM_CONDITIONAL(HAVE_CWRAP_PAM, test "x$have_cwrap_pam" != xno && test "$have_liboath" = yes && test "$pam_enabled" = yes)
+AM_CONDITIONAL(HAVE_CWRAP_ALL, test "x$have_cwrap_nss" != xno && test "x$have_cwrap_pam")
 
 AC_ARG_WITH(radius,
   AS_HELP_STRING([--without-radius], [do not include Radius support]),
@@ -317,7 +336,7 @@ AC_CHECK_MEMBER([struct sockaddr.sa_len],
 #include <sys/socket.h>
 ])
 
-AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h], [], [], [])
+AC_CHECK_HEADERS([net/if_tun.h linux/if_tun.h netinet/in_systm.h crypt.h], [], [], [])
 
 AC_CHECK_FUNCS([setproctitle vasprintf clock_gettime isatty pselect ppoll getpeereid sigaltstack])
 AC_CHECK_FUNCS([strlcpy posix_memalign malloc_trim strsep])
@@ -327,6 +346,8 @@ if [ test -z "$LIBWRAP" ];then
 else
 	libwrap_enabled="yes"
 fi
+
+isolation="none"
 
 AC_ARG_ENABLE(seccomp,
   AS_HELP_STRING([--disable-seccomp], [disable seccomp support]),
@@ -339,6 +360,7 @@ AC_LIB_HAVE_LINKFLAGS(seccomp,, [#include <seccomp.h>
 	seccomp_enabled="no"
  else
 	seccomp_enabled="yes"
+	isolation="seccomp"
  fi
 fi
 
@@ -499,6 +521,16 @@ LIBS="$oldlibs"
 fi
 AM_CONDITIONAL(PCL, test "$with_local_pcl" = no)
 
+AC_ARG_WITH(werror,
+  AS_HELP_STRING([--with-werror], [fail on gcc warnings]),
+  [src_cflags="-Werror"], [])
+AC_SUBST([SRC_CFLAGS], [${src_cflags}])
+
+dnl config options for inih
+AC_DEFINE([INI_STOP_ON_FIRST_ERROR], [1], [inih configuration])
+AC_DEFINE([INI_INLINE_COMMENT_PREFIXES], ["#"], [inih configuration])
+AC_DEFINE([INI_ALLOW_MULTILINE], [1], [inih configuration])
+
 if test "$have_cwrap_pam" = yes; then
 	m4_ifdef([PKG_CHECK_VAR], [PKG_CHECK_VAR([CWRAP_PAM_MODULES], [pam_wrapper], [modules])])
 
@@ -528,20 +560,6 @@ gid=$(id -g)
 AC_SUBST([ROOTUID], [$uid])
 AC_SUBST([ROOTGID], [$gid])
 
-LIBOPTS_CHECK([libopts])
-if test "$NEED_LIBOPTS_DIR" = "true";then
-	dnl create libopts-generated files
-        AC_CONFIG_LINKS([src/ocpasswd-args.c:src/ocpasswd/ocpasswd-args.c.in
-			 src/ocpasswd-args.h:src/ocpasswd/ocpasswd-args.h.in
-			 src/ocserv-args.c:src/ocserv-args.c.in
-			 src/ocserv-args.h:src/ocserv-args.h.in])
-	AC_SUBST([AUTOGEN], [:])
-	enable_local_libopts=yes
-else
-	enable_local_libopts=no
-fi
-AM_CONDITIONAL(NEED_LIBOPTS, test "$enable_local_libopts" = "yes")
-
 AC_CONFIG_FILES([
 	Makefile
 	src/version.inc
@@ -567,6 +585,7 @@ Summary of build options:
   CFlags:               ${CFLAGS}
   CWrap testing:        ${have_cwrap}
   CWrap PAM testing:    ${have_cwrap_pam}
+  CWrap NSS testing:    ${have_cwrap_nss}
   
   PAM auth backend:     ${pam_enabled}
   Radius auth backend:  ${radius_enabled}
@@ -575,7 +594,7 @@ Summary of build options:
   TCP wrappers:         ${libwrap_enabled}
   systemd:              ${systemd_enabled}
   (socket activation)
-  seccomp:              ${seccomp_enabled}
+  worker isolation:     ${isolation}
   Compression:          ${enable_compression}
   LZ4 compression:      ${enable_lz4}
   readline:             ${have_readline}
@@ -586,7 +605,23 @@ Summary of build options:
   local talloc:         ${with_local_talloc}
   local protobuf-c:     ${with_local_protobuf_c}
   local PCL library:    ${with_local_pcl}
-  local libopts:        ${enable_local_libopts}
   local http-parser:    ${with_local_http_parser}
 ])
+
+if test "${warn_leak}" = "yes";then
+    AC_MSG_WARN([[***
+*** a broken version of gnutls was found; will work around but server will leak memory;
+*** please update to the latest version of a supported gnutls branch (e.g. as 3.3.x, 3.5.x, or 3.6.x)
+*** for better server performance.
+***]])
+fi
+
+if test "x${isolation}" = xnone;then
+	AC_MSG_WARN([[
+***
+*** No supported worker isolation system was found. Worker processes
+*** will not be isolated. Only seccomp is supported (see src/worker-privs.c)
+*** ]])
+fi
+
 

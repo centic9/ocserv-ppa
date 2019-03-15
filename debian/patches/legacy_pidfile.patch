@@ -1,0 +1,30 @@
+Index: ocserv/doc/systemd/socket-activated/ocserv.service
+===================================================================
+--- ocserv.orig/doc/systemd/socket-activated/ocserv.service
++++ ocserv/doc/systemd/socket-activated/ocserv.service
+@@ -6,8 +6,8 @@ Requires=ocserv.socket
+ 
+ [Service]
+ PrivateTmp=true
+-PIDFile=/var/run/ocserv.pid
+-ExecStart=/usr/sbin/ocserv --foreground --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
++PIDFile=/run/ocserv.pid
++ExecStart=/usr/sbin/ocserv --foreground --pid-file /run/ocserv.pid --config /etc/ocserv/ocserv.conf
+ ExecReload=/bin/kill -HUP $MAINPID
+ 
+ [Install]
+Index: ocserv/doc/systemd/standalone/ocserv.service
+===================================================================
+--- ocserv.orig/doc/systemd/standalone/ocserv.service
++++ ocserv/doc/systemd/standalone/ocserv.service
+@@ -6,8 +6,8 @@ After=dbus.service
+ 
+ [Service]
+ PrivateTmp=true
+-PIDFile=/var/run/ocserv.pid
+-ExecStart=/usr/sbin/ocserv --foreground --pid-file /var/run/ocserv.pid --config /etc/ocserv/ocserv.conf
++PIDFile=/run/ocserv.pid
++ExecStart=/usr/sbin/ocserv --foreground --pid-file /run/ocserv.pid --config /etc/ocserv/ocserv.conf
+ ExecReload=/bin/kill -HUP $MAINPID
+ 
+ [Install]

@@ -1,1 +1,3 @@
-prevent-parallel-build-of-manpages.patch
+legacy_pidfile.patch
+0001-worker-allow-negotiating-AC-DTLS12-with-openconnect.patch
+0002-worker-added-safety-check-for-selected-DTLS-ciphersu.patch

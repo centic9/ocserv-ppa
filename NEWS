@@ -1,5 +1,50 @@
+* Version 0.12.2 (released 2019-01-10)
+- Added support for AES256-SHA legacy cipher. This allows the anyconnect
+  clients to use AES256.
+- Added support for the DTLS1.2 protocol hack used by new Anyconnect clients.
+
+
+* Version 0.12.1 (released 2018-05-12)
+- Fixed crash on initialization when server was running on background (#154)
+- Work around issues with GnuTLS 3.4.x on ubuntu 16.04, at the cost
+  of a memory leak on key reload (#152)
+
+
+* Version 0.12.0 (released 2018-04-22)
+- Allow DTLS stream to come from different IP from TLS stream.
+  There are situations where internet providers send the UDP 
+  stream from different IP (#61).
+- Increased possibilities of allowed combinations of authentication
+  methods (#108).
+- Corrected regression since 0.11.8 with OTP authentication (#137).
+- Added support for hostname-based virtual hosts, utilizing TLS
+  SNI. With that change it is possible to configure multiple servers
+  running over the same port (#133).
+- Rename the tun device on BSD systems which support SIOCSIFNAME
+  ioctl.
+- Correctly handle proxy-protocol's health commands. That eliminates
+  few connection drops when proxy protocol is in use.
+- Corrected crash on certain cases when proxy protocol is in use (#146).
+
+
+* Version 0.11.10 (released 2018-01-07)
+- Increased the DTLS handshake timeout to 60 seconds and decreased
+  retransmission time to 400ms.
+- Improved compatibility with certain anyconnect clients which
+  disconnect and reconnect after session establishment. Sessions
+  which are explicitly terminated by the user, remain active for
+  few seconds (15) to allow for anyconnect clients' reconnections.
+- Improved cookie behavior on client timeout. The cookies remain
+  active for their validity time, allowing mobile clients to get
+  into sleep and recover session using the same cookie.
+- Addressed issue which could cause the security module enter an
+  infinite loop while printing the available of sessions for occtl.
+- occtl: added support for displaying information on available sessions,
+  via the 'show session SID' option.
+
+
 * Version 0.11.9 (released 2017-10-09)
-- Fixed bug which caused the acceptable of invalid IPv4 address as valid (#112).
+- Fixed bug which caused the acceptance of invalid IPv4 address as valid (#112).
 - Fixed compatibility with gnutls 3.3.8 (used in debian jessie) by avoiding the
   use of the 'VERS-ALL' priority string which was introduced in 3.3.24.
 - Fixed null pointer dereference when parsing locked accounts in plain

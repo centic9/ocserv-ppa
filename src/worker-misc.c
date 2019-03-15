@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2018 Nikos Mavrogiannopoulos
  * Copyright (C) 2015-2016 Red Hat, Inc.
  *
  * This file is part of ocserv.
@@ -150,10 +150,12 @@ int handle_commands_from_main(struct worker_st *ws)
 			ws->dtls_tptr.msg = tmsg;
 			ws->dtls_tptr.fd = fd;
 
-			if (ws->config->try_mtu == 0)
+			if (WSCONFIG(ws)->try_mtu == 0)
 				set_mtu_disc(fd, ws->proto, 0);
 
 			oclog(ws, LOG_DEBUG, "received new UDP fd and connected to peer");
+			ws->udp_recv_time = time(0);
+
 			return 0;
 
 			}
@@ -187,8 +189,8 @@ int complete_vpn_info(worker_st * ws, struct vpn_st *vinfo)
 		return -1;
 	}
 
-	if (ws->config->default_mtu != 0) {
-		vinfo->mtu = ws->config->default_mtu;
+	if (WSCONFIG(ws)->default_mtu != 0) {
+		vinfo->mtu = WSCONFIG(ws)->default_mtu;
 	} else {
 		fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (fd == -1)
@@ -219,7 +221,7 @@ void ocsigaltstack(struct worker_st *ws)
 	int e;
 
 	/* setup the stack for signal handlers */
-	if (posix_memalign(&ss.ss_sp, getpagesize(), SIGSTKSZ) < 0) {
+	if (posix_memalign((void**)&ss.ss_sp, getpagesize(), SIGSTKSZ) < 0) {
 		oclog(ws, LOG_ERR,
 		      "could not allocate memory for signal stack");
 		exit(1);

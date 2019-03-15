@@ -27,14 +27,16 @@
 #include <tlslib.h>
 #include "common/common.h"
 
+#include "vhost.h"
+
 #define SESSION_STR "(session: %.6s)"
 #define MAX_GROUPS 32
 
 typedef struct sec_mod_st {
-	struct cfg_st *config;
-	struct perm_cfg_st *perm_config;
-	gnutls_privkey_t *key;
-	unsigned key_size;
+	struct list_head *vconfig;
+	void *config_pool;
+	void *sec_mod_pool;
+
 	struct htable *client_db;
 	int cmd_fd;
 	int cmd_fd_sync;
@@ -45,8 +47,6 @@ typedef struct sec_mod_st {
 	uint32_t avg_auth_time; /* the average time spent in (sucessful) authentication */
 	uint32_t total_authentications; /* successful authentications: to calculate the average above */
 	time_t last_stats_reset;
-
-	struct config_mod_st *config_module;
 } sec_mod_st;
 
 typedef struct stats_st {
@@ -75,7 +75,7 @@ typedef struct common_acct_info_st {
 	unsigned id;
 } common_acct_info_st;
 
-#define IS_CLIENT_ENTRY_EXPIRED_FULL(sec, e, now, clean) (e->time != -1 && (now - e->time) > (sec->config->cookie_timeout + (clean?AUTH_SLACK_TIME:0)) && e->in_use == 0)
+#define IS_CLIENT_ENTRY_EXPIRED_FULL(sec, e, now, clean) (e->exptime != -1 && now >= e->exptime && e->in_use == 0)
 #define IS_CLIENT_ENTRY_EXPIRED(sec, e, now) IS_CLIENT_ENTRY_EXPIRED_FULL(sec, e, now, 0)
 
 typedef struct client_entry_st {
@@ -86,7 +86,7 @@ typedef struct client_entry_st {
 	 */
 	uint8_t sid[SID_SIZE];
 
-	void * auth_ctx; /* the context of authentication */
+	void *auth_ctx; /* the context of authentication */
 	unsigned session_is_open; /* whether open_session was done */
 	unsigned in_use; /* counter of users of this structure */
 	unsigned tls_auth_ok;
@@ -101,8 +101,10 @@ typedef struct client_entry_st {
 
 	uint8_t dtls_session_id[GNUTLS_MAX_SESSION_ID];
 
-	/* The time this client entry was last modified (created or closed) */
-	time_t time;
+	/* The time this client entry was created */
+	time_t created;
+	/* The time this client entry is supposed to expire */
+	time_t exptime;
 
 	/* the auth type associated with the user */
 	unsigned auth_type;
@@ -118,12 +120,17 @@ typedef struct client_entry_st {
 
 	/* the module this entry is using */
 	const struct auth_mod_st *module;
+	void *vhost_auth_ctx;
+	void *vhost_acct_ctx;
+
+	/* the vhost this user is associated with */
+	vhost_cfg_st *vhost;
 } client_entry_st;
 
 void *sec_mod_client_db_init(sec_mod_st *sec);
 void sec_mod_client_db_deinit(sec_mod_st *sec);
 unsigned sec_mod_client_db_elems(sec_mod_st *sec);
-client_entry_st * new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid);
+client_entry_st * new_client_entry(sec_mod_st *sec, struct vhost_cfg_st *, const char *ip, unsigned pid);
 client_entry_st * find_client_entry(sec_mod_st *sec, uint8_t sid[SID_SIZE]);
 void del_client_entry(sec_mod_st *sec, client_entry_st * e);
 void expire_client_entry(sec_mod_st *sec, client_entry_st * e);
@@ -131,12 +138,12 @@ void cleanup_client_entries(sec_mod_st *sec);
 
 #ifdef __GNUC__
 # define seclog(sec, prio, fmt, ...) \
-	if (prio != LOG_DEBUG || sec->perm_config->debug >= 3) { \
+	if (prio != LOG_DEBUG || GETPCONFIG(sec)->debug >= 3) { \
 		syslog(prio, "sec-mod: "fmt, ##__VA_ARGS__); \
 	}
 #else
 # define seclog(sec,prio,...) \
-	if (prio != LOG_DEBUG || sec->config->debug >= 3) { \
+	if (prio != LOG_DEBUG || GETPCONFIG(sec)->debug >= 3) { \
 		 syslog(prio, __VA_ARGS__); \
 	}
 #endif
@@ -144,7 +151,7 @@ void cleanup_client_entries(sec_mod_st *sec);
 void  seclog_hex(const struct sec_mod_st* sec, int priority,
 		const char *prefix, uint8_t* bin, unsigned bin_size, unsigned b64);
 
-void sec_auth_init(sec_mod_st *sec, struct perm_cfg_st *config);
+void sec_auth_init(struct vhost_cfg_st *vhost);
 
 void handle_secm_list_cookies_reply(void *pool, int fd, sec_mod_st *sec);
 void handle_sec_auth_ban_ip_reply(sec_mod_st *sec, const BanIpReplyMsg *msg);
@@ -153,9 +160,10 @@ int handle_sec_auth_cont(int cfd, sec_mod_st *sec, const SecAuthContMsg * req);
 int handle_secm_session_open_cmd(sec_mod_st *sec, int fd, const SecmSessionOpenMsg *req);
 int handle_secm_session_close_cmd(sec_mod_st *sec, int fd, const SecmSessionCloseMsg *req);
 int handle_sec_auth_stats_cmd(sec_mod_st * sec, const CliStatsMsg * req, pid_t pid);
-void sec_auth_user_deinit(sec_mod_st * sec, client_entry_st * e);
+void sec_auth_user_deinit(sec_mod_st *sec, client_entry_st *e);
 
-void sec_mod_server(void *main_pool, struct perm_cfg_st *config, const char *socket_file,
+void sec_mod_server(void *main_pool, void *config_pool, struct list_head *vconfig,
+		    const char *socket_file,
 		    int cmd_fd, int cmd_fd_sync);
 
 #endif

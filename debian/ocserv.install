@@ -1,2 +1,2 @@
 debian/ocserv.conf etc/ocserv/
-doc/systemd/socket-activated/ocserv.* lib/systemd/system/
+doc/systemd/standalone/ocserv.* lib/systemd/system/

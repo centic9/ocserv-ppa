@@ -116,24 +116,37 @@ int ws_switch_auth_to(struct worker_st *ws, unsigned auth)
 	    ws->selected_auth->type & auth)
 		return 1;
 
-	for (i=0;i<ws->perm_config->auth_methods;i++) {
-		if (ws->perm_config->auth[i].enabled && (ws->perm_config->auth[i].type & auth) != 0) {
-			ws->selected_auth = &ws->perm_config->auth[i];
+	for (i=0;i<WSPCONFIG(ws)->auth_methods;i++) {
+		if (WSPCONFIG(ws)->auth[i].enabled && (WSPCONFIG(ws)->auth[i].type & auth) != 0) {
+			ws->selected_auth = &WSPCONFIG(ws)->auth[i];
 			return 1;
 		}
 	}
 	return 0;
 }
 
-void ws_disable_auth(struct worker_st *ws, unsigned auth)
+/* disables the selected auth method and switches to the next
+ * available authentication method, and returns
+ * non-zero on success */
+int ws_switch_auth_to_next(struct worker_st *ws)
 {
 	unsigned i;
 
-	for (i=0;i<ws->perm_config->auth_methods;i++) {
-		if ((ws->perm_config->auth[i].type & auth) != 0) {
-			ws->perm_config->auth[i].enabled = 0;
+	if (!ws->selected_auth) {
+		return 0;
+	}
+
+	ws->selected_auth->enabled = 0;
+
+	for (i=0;i<WSPCONFIG(ws)->auth_methods;i++) {
+		if (&WSPCONFIG(ws)->auth[i] != ws->selected_auth &&
+		    WSPCONFIG(ws)->auth[i].enabled != 0) {
+
+			ws->selected_auth = &WSPCONFIG(ws)->auth[i];
+			return 1;
 		}
 	}
+	return 0;
 }
 
 static int append_group_idx(worker_st * ws, str_st *str, unsigned i)
@@ -142,11 +155,11 @@ static int append_group_idx(worker_st * ws, str_st *str, unsigned i)
 	const char *name;
 	const char *value;
 
-	value = ws->config->group_list[i];
-	if (ws->config->friendly_group_list != NULL && ws->config->friendly_group_list[i] != NULL)
-		name = ws->config->friendly_group_list[i];
+	value = WSCONFIG(ws)->group_list[i];
+	if (WSCONFIG(ws)->friendly_group_list != NULL && WSCONFIG(ws)->friendly_group_list[i] != NULL)
+		name = WSCONFIG(ws)->friendly_group_list[i];
 	else
-		name = ws->config->group_list[i];
+		name = WSCONFIG(ws)->group_list[i];
 
 	snprintf(temp, sizeof(temp), "<option value=\"%s\">%s</option>\n", value, name);
 	if (str_append_str(str, temp) < 0)
@@ -164,11 +177,11 @@ static int append_group_str(worker_st * ws, str_st *str, const char *group)
 
 	value = name = group;
 
-	if (ws->config->friendly_group_list) {
-		for (i=0;i<ws->config->group_list_size;i++) {
-			if (strcmp(ws->config->group_list[i], group) == 0) {
-				if (ws->config->friendly_group_list[i] != NULL)
-					name = ws->config->friendly_group_list[i];
+	if (WSCONFIG(ws)->friendly_group_list) {
+		for (i=0;i<WSCONFIG(ws)->group_list_size;i++) {
+			if (strcmp(WSCONFIG(ws)->group_list[i], group) == 0) {
+				if (WSCONFIG(ws)->friendly_group_list[i] != NULL)
+					name = WSCONFIG(ws)->friendly_group_list[i];
 				break;
 			}
 		}
@@ -203,7 +216,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		login_msg_end = oc_login_msg_end;
 	}
 
-	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && ws->auth_state < S_AUTH_COOKIE) {
+	if ((ws->selected_auth->type & AUTH_TYPE_GSSAPI) && ws->auth_state < S_AUTH_COOKIE) {
 		if (ws->req.authorization == NULL || ws->req.authorization_size == 0)
 			return basic_auth_handler(ws, http_ver, NULL);
 		else
@@ -228,7 +241,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		ret =
 		    cstp_printf(ws,
 			       "Set-Cookie: webvpncontext=%s; Max-Age=%u; Secure\r\n",
-			       context, (unsigned)ws->config->cookie_timeout);
+			       context, (unsigned)WSCONFIG(ws)->cookie_timeout);
 		if (ret < 0)
 			return -1;
 
@@ -292,7 +305,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 			}
 		}
 
-		if (ws->selected_auth->type & AUTH_TYPE_CERTIFICATE && ws->cert_auth_ok != 0) {
+		if ((ws->selected_auth->type & AUTH_TYPE_CERTIFICATE) && ws->cert_auth_ok != 0) {
 			ret = get_cert_info(ws);
 			if (ret < 0) {
 				ret = -1;
@@ -302,7 +315,7 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 		}
 
 		/* send groups */
-		if (ws->config->group_list_size > 0 || ws->cert_groups_size > 0) {
+		if (WSCONFIG(ws)->group_list_size > 0 || ws->cert_groups_size > 0) {
 			ret = str_append_str(&str, "<select name=\"group_list\" label=\"Group:\">\n");
 			if (ret < 0) {
 				ret = -1;
@@ -322,8 +335,8 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 				}
 			}
 
-			if (ws->config->default_select_group) {
-				ret = str_append_printf(&str, "<option>%s</option>\n", ws->config->default_select_group);
+			if (WSCONFIG(ws)->default_select_group) {
+				ret = str_append_printf(&str, "<option>%s</option>\n", WSCONFIG(ws)->default_select_group);
 				if (ret < 0) {
 					ret = -1;
 					goto cleanup;
@@ -331,13 +344,13 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 			}
 
 			/* append any groups available in the certificate */
-			if (ws->selected_auth->type & AUTH_TYPE_CERTIFICATE && ws->cert_auth_ok != 0) {
+			if ((ws->selected_auth->type & AUTH_TYPE_CERTIFICATE) && ws->cert_auth_ok != 0) {
 				unsigned dup;
 
 				for (i=0;i<ws->cert_groups_size;i++) {
 					dup = 0;
-					for (j=0;j<ws->config->group_list_size;j++) {
-						if (strcmp(ws->cert_groups[i], ws->config->group_list[j]) == 0) {
+					for (j=0;j<WSCONFIG(ws)->group_list_size;j++) {
+						if (strcmp(ws->cert_groups[i], WSCONFIG(ws)->group_list[j]) == 0) {
 							dup = 1;
 							break;
 						}
@@ -358,8 +371,8 @@ int get_auth_handler2(worker_st * ws, unsigned http_ver, const char *pmsg, unsig
 			}
 
 
-			for (i=0;i<ws->config->group_list_size;i++) {
-				if (ws->groupname[0] != 0 && strcmp(ws->groupname, ws->config->group_list[i]) == 0)
+			for (i=0;i<WSCONFIG(ws)->group_list_size;i++) {
+				if (ws->groupname[0] != 0 && strcmp(ws->groupname, WSCONFIG(ws)->group_list[i]) == 0)
 					continue;
 
 				ret = append_group_idx(ws, &str, i);
@@ -452,7 +465,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 		goto fail;
 	}
 
-	if (strcmp(ws->config->cert_user_oid, "SAN(rfc822name)") == 0) {	/* check for RFC822Name */
+	if (strcmp(WSCONFIG(ws)->cert_user_oid, "SAN(rfc822name)") == 0) {	/* check for RFC822Name */
 		for (i = 0;; i++) {
 			size = sizeof(ws->cert_username);
 			ret =
@@ -472,11 +485,11 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 		if (ret != 0) {
 			ret = 1;
 		}
-	} else if (ws->config->cert_user_oid) {	/* otherwise certificate username is ignored */
+	} else if (WSCONFIG(ws)->cert_user_oid) {	/* otherwise certificate username is ignored */
 		size = sizeof(ws->cert_username);
 		ret =
 		    gnutls_x509_crt_get_dn_by_oid(crt,
-					  ws->config->cert_user_oid, 0,
+					  WSCONFIG(ws)->cert_user_oid, 0,
 					  0, ws->cert_username, &size);
 	} else {
 		ret = gnutls_x509_crt_get_dn(crt, ws->cert_username, &size);
@@ -488,15 +501,15 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 			      (unsigned)sizeof(ws->cert_username));
 		else if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
 			oclog(ws, LOG_ERR, "the certificate's DN does not contain OID %s; cannot determine username",
-			      ws->config->cert_user_oid);
+			      WSCONFIG(ws)->cert_user_oid);
 		} else {
 			oclog(ws, LOG_ERR, "cannot obtain user name from certificate DN(%s): %s",
-			      ws->config->cert_user_oid, gnutls_strerror(ret));
+			      WSCONFIG(ws)->cert_user_oid, gnutls_strerror(ret));
 		}
 		goto fail;
 	}
 
-	if (ws->config->cert_group_oid) {
+	if (WSCONFIG(ws)->cert_group_oid) {
 		i = 0;
 		do {
 			ws->cert_groups = talloc_realloc(ws, ws->cert_groups, char*,  i+1);
@@ -509,7 +522,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 			size = 0;
 			ret =
 			    gnutls_x509_crt_get_dn_by_oid(crt,
-						  ws->config->cert_group_oid, i,
+						  WSCONFIG(ws)->cert_group_oid, i,
 						  0, NULL, &size);
 			if (ret == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE)
 				break;
@@ -519,7 +532,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 					ret = GNUTLS_E_INTERNAL_ERROR;
 				oclog(ws, LOG_ERR,
 				      "cannot obtain group from certificate DN(%s): %s",
-				      ws->config->cert_group_oid, gnutls_strerror(ret));
+				      WSCONFIG(ws)->cert_group_oid, gnutls_strerror(ret));
 				goto fail;
 			}
 
@@ -532,7 +545,7 @@ int get_cert_names(worker_st * ws, const gnutls_datum_t * raw)
 
 			ret =
 			    gnutls_x509_crt_get_dn_by_oid(crt,
-						  ws->config->cert_group_oid, i,
+						  WSCONFIG(ws)->cert_group_oid, i,
 						  0, ws->cert_groups[i], &size);
 			if (ret < 0) {
 				oclog(ws, LOG_ERR,
@@ -579,7 +592,7 @@ static int recv_cookie_auth_reply(worker_st * ws)
 	ret = recv_socket_msg(ws, ws->cmd_fd, AUTH_COOKIE_REP, &socketfd,
 			      (void *)&msg,
 			      (unpack_func) auth_cookie_reply_msg__unpack,
-			      ws->config->auth_timeout);
+			      WSCONFIG(ws)->auth_timeout);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "error receiving auth reply message");
 		return ret;
@@ -653,7 +666,7 @@ static int recv_cookie_auth_reply(worker_st * ws)
 			}
 
 			if (msg->config->no_udp != 0)
-				ws->perm_config->udp_port = 0;
+				WSPCONFIG(ws)->udp_port = 0;
 
 			/* routes */
 			if (check_if_default_route(msg->config->routes, msg->config->n_routes))
@@ -718,11 +731,11 @@ static int recv_auth_reply(worker_st * ws, int sd, char **txt, unsigned *pcounte
 	PROTOBUF_ALLOCATOR(pa, ws);
 
 	/* We don't use the default socket timeout here, but rather the
-	 * longer ws->config->auth_timeout to allow for authentication
+	 * longer WSCONFIG(ws)->auth_timeout to allow for authentication
 	 * methods which require the user input prior to returning a reply */
 	ret = recv_msg(ws, sd, CMD_SEC_AUTH_REPLY,
 		       (void *)&msg, (unpack_func) sec_auth_reply_msg__unpack,
-		       ws->config->auth_timeout);
+		       WSCONFIG(ws)->auth_timeout);
 	if (ret < 0) {
 		oclog(ws, LOG_ERR, "error receiving auth reply message");
 		return ret;
@@ -825,7 +838,7 @@ int get_cert_info(worker_st * ws)
 
 	ret = get_cert_names(ws, cert);
 	if (ret < 0) {
-		if (ws->config->cert_user_oid == NULL) {
+		if (WSCONFIG(ws)->cert_user_oid == NULL) {
 			oclog(ws, LOG_ERR, "cannot read username from certificate; cert-user-oid is not set");
 		} else {
 			oclog(ws, LOG_ERR, "cannot read username from certificate");
@@ -883,7 +896,7 @@ int auth_cookie(worker_st * ws, void *cookie, size_t cookie_size)
 	AuthCookieRequestMsg msg = AUTH_COOKIE_REQUEST_MSG__INIT;
 
 	if ((ws->selected_auth->type & AUTH_TYPE_CERTIFICATE)
-	    && ws->config->cisco_client_compat == 0) {
+	    && WSCONFIG(ws)->cisco_client_compat == 0) {
 		if (ws->cert_auth_ok == 0) {
 			oclog(ws, LOG_INFO,
 			      "no certificate provided for cookie authentication");
@@ -937,9 +950,9 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 		success_msg_foot_size = strlen(success_msg_foot);
 	} else {
 		success_msg_head = oc_success_msg_head;
-		if (ws->config->xml_config_file) {
+		if (WSCONFIG(ws)->xml_config_file) {
 			success_msg_foot = talloc_asprintf(ws, OC_SUCCESS_MSG_FOOT_PROFILE,
-				ws->config->xml_config_file, ws->config->xml_config_hash);
+				WSCONFIG(ws)->xml_config_file, WSCONFIG(ws)->xml_config_hash);
 		} else {
 			success_msg_foot = talloc_strdup(ws, OC_SUCCESS_MSG_FOOT);
 		}
@@ -966,7 +979,7 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	if (ret < 0)
 		goto fail;
 
-	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && imsg != NULL && imsg[0] != 0) {
+	if ((ws->selected_auth->type & AUTH_TYPE_GSSAPI) && imsg != NULL && imsg[0] != 0) {
 		ret = cstp_printf(ws, "WWW-Authenticate: Negotiate %s\r\n", imsg);
 		if (ret < 0)
 			goto fail;
@@ -976,10 +989,10 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	if (ret < 0)
 		goto fail;
 
-	if (ws->config->banner) {
+	if (WSCONFIG(ws)->banner) {
 		size =
 		    snprintf(msg, sizeof(msg), "<banner>%s</banner>",
-			     ws->config->banner);
+			     WSCONFIG(ws)->banner);
 		if (size <= 0)
 			goto fail;
 		/* snprintf() returns not a very useful value, so we need to recalculate */
@@ -1029,18 +1042,18 @@ int post_common_handler(worker_st * ws, unsigned http_ver, const char *imsg)
 	if (ret < 0)
 		goto fail;
 
-	if (ws->config->xml_config_file) {
+	if (WSCONFIG(ws)->xml_config_file) {
 		ret =
 		    cstp_printf(ws,
 			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s&lu:/+CSCOT+/translation-table?textdomain%%3DAnyConnect%%26type%%3Dmanifest&fu:profiles%%2F%s&fh:%s; path=/; Secure\r\n",
-			       ws->perm_config->cert_hash,
-			       ws->config->xml_config_file,
-			       ws->config->xml_config_hash);
+			       WSPCONFIG(ws)->cert_hash,
+			       WSCONFIG(ws)->xml_config_file,
+			       WSCONFIG(ws)->xml_config_hash);
 	} else {
 		ret =
 		    cstp_printf(ws,
 			       "Set-Cookie: webvpnc=bu:/&p:t&iu:1/&sh:%s; path=/; Secure\r\n",
-			       ws->perm_config->cert_hash);
+			       WSPCONFIG(ws)->cert_hash);
 	}
 
 	if (ret < 0)
@@ -1274,7 +1287,7 @@ int basic_auth_handler(worker_st * ws, unsigned http_ver, const char *msg)
 	if (ret < 0)
 		return -1;
 
-	if (ws->perm_config->auth_methods > 1) {
+	if (WSPCONFIG(ws)->auth_methods > 1) {
 		ret = cstp_puts(ws, "X-HTTP-Auth-Support: fallback\r\n");
 		if (ret < 0)
 			return -1;
@@ -1318,7 +1331,7 @@ static char *get_our_ip(worker_st * ws, char str[MAX_IP_STR])
 {
 	int ret;
 	struct sockaddr_storage sockaddr;
-	gsocklen socklen;
+	socklen_t socklen;
 
 	if (ws->our_addr_len > 0) {
 		return human_addr2((struct sockaddr*)&ws->our_addr, ws->our_addr_len, str, MAX_IP_STR, 0);
@@ -1383,8 +1396,8 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 		if (ret < 0) {
 			oclog(ws, LOG_HTTP_DEBUG, "failed reading groupname");
 		} else {
-			if (ws->config->default_select_group != NULL &&
-				   strcmp(groupname, ws->config->default_select_group) == 0) {
+			if (WSCONFIG(ws)->default_select_group != NULL &&
+				   strcmp(groupname, WSCONFIG(ws)->default_select_group) == 0) {
 				def_group = 1;
 			} else {
 				strlcpy(ws->groupname, groupname, sizeof(ws->groupname));
@@ -1428,7 +1441,13 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 				reason = MSG_NO_CERT_ERROR;
 				oclog(ws, LOG_INFO,
 				      "no certificate provided for authentication");
-				goto auth_fail;
+
+				if (ws_switch_auth_to_next(ws) == 0)
+					goto auth_fail;
+
+				ws->auth_state = S_AUTH_INACTIVE;
+				ws->sid_set = 0;
+				goto ask_auth;
 			} else {
 				ret = get_cert_info(ws);
 				if (ret < 0) {
@@ -1451,6 +1470,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 			ireq.auth_type |= AUTH_TYPE_CERTIFICATE;
 		}
 
+		ireq.vhost = ws->vhost->name;
 		ireq.ip = ws->remote_ip_str;
 		ireq.our_ip = get_our_ip(ws, our_ip_str);
 		if (req->user_agent[0] != 0)
@@ -1492,7 +1512,7 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 			areq.password = req->authorization + 10;
 		}
 
-		if (areq.password == NULL && ws->selected_auth->type & AUTH_TYPE_USERNAME_PASS) {
+		if (areq.password == NULL && (ws->selected_auth->type & AUTH_TYPE_USERNAME_PASS)) {
 			ret = match_password_in_reply(ws, req->body, req->body_length,
 						      &password);
 			if (ret < 0) {
@@ -1564,9 +1584,8 @@ int post_auth_handler(worker_st * ws, unsigned http_ver)
 	} else if (ret < 0) {
 		if (ws->selected_auth->type & AUTH_TYPE_GSSAPI) {
 			/* Fallback from GSSAPI to USERNAME-PASSWORD */
-			ws_disable_auth(ws, AUTH_TYPE_GSSAPI);
 			oclog(ws, LOG_ERR, "failed gssapi authentication");
-			if (ws_switch_auth_to(ws, AUTH_TYPE_USERNAME_PASS) == 0)
+			if (ws_switch_auth_to_next(ws) == 0)
 				goto auth_fail;
 
 			ws->auth_state = S_AUTH_INACTIVE;

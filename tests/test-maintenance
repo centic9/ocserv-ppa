@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# Copyright (C) 2018 Nikos Mavrogiannopoulos
+#
+# This file is part of ocserv.
+#
+# ocserv is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# ocserv is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+SERV="${SERV:-../src/ocserv}"
+srcdir=${srcdir:-.}
+NO_NEED_ROOT=1
+PORT=4434
+
+. `dirname $0`/common.sh
+
+echo "Testing ocserv and SIGUSR2/forced maintenance behavior... "
+
+update_config test-sighup.config
+launch_simple_sr_server -d 1 -f -c ${CONFIG}
+PID=$!
+
+wait_server $PID
+
+echo -n "Connecting to obtain cookie (with certificate)... "
+( LD_PRELOAD=libsocket_wrapper.so $OPENCONNECT -q $ADDRESS:$PORT --sslkey ${srcdir}/certs/user-key.pem -c ${srcdir}/certs/user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
+	fail $PID "Could not connect with certificate!"
+
+echo ok
+sleep 5
+echo "Reloadig server"
+kill -HUP $PID
+
+echo "Performing maintenance cycle"
+kill -USR2 $PID
+sleep 5
+
+echo -n "Connecting to obtain cookie (with certificate)... "
+( LD_PRELOAD=libsocket_wrapper.so $OPENCONNECT -q $ADDRESS:$PORT --sslkey ${srcdir}/certs/user-key.pem -c ${srcdir}/certs/user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
+	fail $PID "Could not connect with certificate!"
+
+echo ok
+
+sleep 10
+echo "Performing maintenance cycle"
+kill -USR2 $PID
+sleep 5
+
+echo -n "Connecting to obtain cookie (with certificate)... "
+( LD_PRELOAD=libsocket_wrapper.so $OPENCONNECT -q $ADDRESS:$PORT --sslkey ${srcdir}/certs/user-key.pem -c ${srcdir}/certs/user-cert.pem --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly </dev/null >/dev/null 2>&1 ) ||
+	fail $PID "Could not connect with certificate!"
+
+echo ok
+
+cleanup
+
+exit 0

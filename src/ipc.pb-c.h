@@ -205,10 +205,11 @@ struct  _SessionResumeFetchMsg
    * and contains the address of the client.
    */
   ProtobufCBinaryData cli_addr;
+  char *vhost;
 };
 #define SESSION_RESUME_FETCH_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&session_resume_fetch_msg__descriptor) \
-    , {0,NULL}, {0,NULL} }
+    , {0,NULL}, {0,NULL}, NULL }
 
 
 /*
@@ -224,10 +225,11 @@ struct  _SessionResumeStoreReqMsg
    * and contains the address of the client.
    */
   ProtobufCBinaryData cli_addr;
+  char *vhost;
 };
 #define SESSION_RESUME_STORE_REQ_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&session_resume_store_req_msg__descriptor) \
-    , {0,NULL}, {0,NULL}, {0,NULL} }
+    , {0,NULL}, {0,NULL}, {0,NULL}, NULL }
 
 
 /*
@@ -384,10 +386,11 @@ struct  _SecAuthInitMsg
   uint32_t auth_type;
   char *our_ip;
   char *user_agent;
+  char *vhost;
 };
 #define SEC_AUTH_INIT_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&sec_auth_init_msg__descriptor) \
-    , 0, NULL, NULL, NULL, 0,NULL, NULL, 0u, NULL, NULL }
+    , 0, NULL, NULL, NULL, 0,NULL, NULL, 0u, NULL, NULL, NULL }
 
 
 /*
@@ -445,10 +448,11 @@ struct  _SecOpMsg
   uint32_t key_idx;
   ProtobufCBinaryData data;
   uint32_t sig;
+  char *vhost;
 };
 #define SEC_OP_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&sec_op_msg__descriptor) \
-    , 0,0, {0,NULL}, 0 }
+    , 0,0, {0,NULL}, 0, NULL }
 
 
 struct  _SecGetPkMsg
@@ -456,10 +460,13 @@ struct  _SecGetPkMsg
   ProtobufCMessage base;
   uint32_t key_idx;
   uint32_t pk;
+  char *vhost;
+  protobuf_c_boolean has_bits;
+  uint32_t bits;
 };
 #define SEC_GET_PK_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&sec_get_pk_msg__descriptor) \
-    , 0, 0 }
+    , 0, 0, NULL, 0,0 }
 
 
 /*
@@ -544,10 +551,11 @@ struct  _SecmSessionReplyMsg
   uint32_t ipv4_seed;
   ProtobufCBinaryData sid;
   protobuf_c_boolean tls_auth_ok;
+  char *vhost;
 };
 #define SECM_SESSION_REPLY_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&secm_session_reply_msg__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, 0, {0,NULL}, 0 }
+    , 0, NULL, NULL, NULL, NULL, 0, {0,NULL}, 0, NULL }
 
 
 /*
@@ -559,19 +567,22 @@ struct  _CookieIntMsg
   ProtobufCBinaryData safe_id;
   protobuf_c_boolean session_is_open;
   protobuf_c_boolean tls_auth_ok;
-  uint32_t last_modified;
+  uint32_t created;
   char *username;
   char *groupname;
   char *user_agent;
   char *remote_ip;
+  uint32_t expires;
   /*
    * the authentication status (PS_*) 
    */
   uint32_t status;
+  protobuf_c_boolean in_use;
+  char *vhost;
 };
 #define COOKIE_INT_MSG__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&cookie_int_msg__descriptor) \
-    , {0,NULL}, 0, 0, 0, NULL, NULL, NULL, NULL, 0 }
+    , {0,NULL}, 0, 0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, NULL }
 
 
 /*

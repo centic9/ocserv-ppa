@@ -39,7 +39,9 @@ else
 	mkdir -p $SOCKDIR
 	export SOCKET_WRAPPER_DIR=$SOCKDIR
 	export SOCKET_WRAPPER_DEFAULT_IFACE=2
+	export NSS_WRAPPER_HOSTS="${srcdir}/data/vhost.hosts"
 	ADDRESS=127.0.0.$SOCKET_WRAPPER_DEFAULT_IFACE
+	RAW_OPENCONNECT="${OPENCONNECT}"
 	OPENCONNECT="eval LD_PRELOAD=libsocket_wrapper.so ${OPENCONNECT}"
 fi
 
@@ -48,10 +50,18 @@ update_config() {
 	username=$(whoami)
 	group=$(groups|cut -f 1 -d ' ')
 	cp "${srcdir}/data/${file}" "$file.$$.tmp"
-	sed -i 's|@USERNAME@|'${username}'|g' "$file.$$.tmp"
-	sed -i 's|@GROUP@|'${group}'|g' "$file.$$.tmp"
-	sed -i 's|@SRCDIR@|'${srcdir}'|g' "$file.$$.tmp"
-	sed -i 's|@CRLNAME@|'${CRLNAME}'|g' "$file.$$.tmp"
+	sed -i -e 's|@USERNAME@|'${username}'|g' "$file.$$.tmp" \
+	       -e 's|@GROUP@|'${group}'|g' "$file.$$.tmp" \
+	       -e 's|@SRCDIR@|'${srcdir}'|g' "$file.$$.tmp" \
+	       -e 's|@OTP_FILE@|'${OTP_FILE}'|g' "$file.$$.tmp" \
+	       -e 's|@CRLNAME@|'${CRLNAME}'|g' "$file.$$.tmp" \
+	       -e 's|@PORT@|'${PORT}'|g' "$file.$$.tmp" \
+	       -e 's|@ADDRESS@|'${ADDRESS}'|g' "$file.$$.tmp" \
+	       -e 's|@VPNNET@|'${VPNNET}'|g' "$file.$$.tmp" \
+	       -e 's|@VPNNET6@|'${VPNNET6}'|g' "$file.$$.tmp" \
+	       -e 's|@ROUTE1@|'${ROUTE1}'|g' "$file.$$.tmp" \
+	       -e 's|@ROUTE2@|'${ROUTE2}'|g' "$file.$$.tmp" \
+	       -e 's|@OCCTL_SOCKET@|'${OCCTL_SOCKET}'|g' "$file.$$.tmp"
 	CONFIG="$file.$$.tmp"
 }
 
@@ -65,7 +75,7 @@ fail() {
 
 launch_server() {
 	if test -n "${VERBOSE}" && test "${VERBOSE}" -ge 1;then
-	    $SERV $* &
+	    $SERV $* -d 3 &
 	else
 	    $SERV $* >/dev/null 2>&1 &
 	fi
@@ -81,7 +91,7 @@ launch_server() {
 
 launch_sr_server() {
 	if test -n "${VERBOSE}" && test "${VERBOSE}" -ge 1;then
-		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* &
+		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* -d 3 &
 	else
 		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* >/dev/null 2>&1 &
 	fi
@@ -99,9 +109,9 @@ launch_sr_pam_server() {
 	mkdir -p "data/$PAMDIR/"
 	test -f "${srcdir}/data/$PAMDIR/users.oath.templ" && cp "${srcdir}/data/$PAMDIR/users.oath.templ" "data/$PAMDIR/users.oath"
 	test -f "${srcdir}/data/$PAMDIR/passdb.templ" && cp "${srcdir}/data/$PAMDIR/passdb.templ" "data/$PAMDIR/passdb"
-
-	export NSS_WRAPPER_PASSWD=./data/pam/nss-passwd
-	export NSS_WRAPPER_GROUP=./data/pam/nss-group
+	export PAM_WRAPPER_SERVICE_DIR=pam.$$.tmp
+	export NSS_WRAPPER_PASSWD=${srcdir}/data/pam/nss-passwd
+	export NSS_WRAPPER_GROUP=${srcdir}/data/pam/nss-group
 	if test -n "${VERBOSE}" && test "${VERBOSE}" -ge 1;then
 		LD_PRELOAD=libnss_wrapper.so:libpam_wrapper.so:libsocket_wrapper.so:libuid_wrapper.so PAM_WRAPPER_SERVICE_DIR="data/$PAMDIR" PAM_WRAPPER=1  UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* &
 	else
@@ -121,7 +131,7 @@ launch_sr_pam_server() {
 
 launch_simple_sr_server() {
 	if test -n "${VERBOSE}" && test "${VERBOSE}" -ge 1;then
-		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* &
+		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* -d 3 &
 	else
 		LD_PRELOAD=libsocket_wrapper.so:libuid_wrapper.so UID_WRAPPER=1 UID_WRAPPER_ROOT=1 $SERV $* >/dev/null 2>&1 &
 	fi

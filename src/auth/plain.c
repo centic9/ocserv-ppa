@@ -37,6 +37,11 @@
 #ifdef HAVE_LIBOATH
 # include <liboath/oath.h>
 #endif
+#ifdef HAVE_CRYPT_H
+  /* libcrypt in Fedora28 does not provide prototype
+   * in unistd.h */
+# include <crypt.h>
+#endif
 
 #define MAX_CPASS_SIZE 128
 #define HOTP_WINDOW 20
@@ -51,40 +56,26 @@ struct plain_ctx_st {
 	const char *pass_msg;
 	unsigned retries;
 	unsigned failed; /* non-zero if the username is wrong */
+
+	const struct plain_cfg_st *config;
 };
 
-static char *password_file = NULL;
-static char *otp_file = NULL;
-
-static void plain_global_init(void *pool, void *additional)
+static void plain_vhost_init(void **vctx, void *pool, void *additional)
 {
 	struct plain_cfg_st *config = additional;
+
+	/* vctx is plain_cfg_st */
 
 	if (config == NULL) {
 		fprintf(stderr, "plain: no configuration passed!\n");
 		exit(1);
 	}
 
+	*vctx = (void*)config;
+
 #ifdef HAVE_LIBOATH
 	oath_init();
 #endif
-
-	if (config->passwd) {
-		password_file = talloc_strdup(pool, config->passwd);
-		if (password_file == NULL) {
-			fprintf(stderr, "plain: memory error\n");
-			exit(1);
-		}
-	}
-
-	if (config->otp_file) {
-		otp_file = talloc_strdup(pool, config->otp_file);
-		if (otp_file == NULL) {
-			fprintf(stderr, "plain: memory error\n");
-			exit(1);
-		}
-	}
-
 	return;
 }
 
@@ -138,6 +129,11 @@ break_group_list(void *pool, char *text,
 					p2--;
 				}
 			}
+
+			if (strlen(broken_text[(*elements)-1]) == 1) {
+				/* skip the group */
+				(*elements)--;
+			}
 		}
 	}
 	while (p != NULL && *elements < MAX_GROUPS);
@@ -153,18 +149,18 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 	char *p, *sp;
 	int ret;
 
-	if (password_file == NULL) {
+	if (pctx->config->passwd == NULL) {
 		/* no password file is set */
 		return 0;
 	}
 
 	pctx->failed = 1;
 
-	fp = fopen(password_file, "r");
+	fp = fopen(pctx->config->passwd, "r");
 	if (fp == NULL) {
 		syslog(LOG_AUTH,
 		       "error in plain authentication; cannot open: %s",
-		       password_file);
+		       pctx->config->passwd);
 		return -1;
 	}
 
@@ -230,7 +226,7 @@ static int read_auth_pass(struct plain_ctx_st *pctx)
 	return ret;
 }
 
-static int plain_auth_init(void **ctx, void *pool, const common_auth_init_st *info)
+static int plain_auth_init(void **ctx, void *pool, void *vctx, const common_auth_init_st *info)
 {
 	struct plain_ctx_st *pctx;
 	int ret;
@@ -247,6 +243,7 @@ static int plain_auth_init(void **ctx, void *pool, const common_auth_init_st *in
 
 	strlcpy(pctx->username, info->username, sizeof(pctx->username));
 	pctx->pass_msg = NULL; /* use default */
+	pctx->config = vctx;
 
 	/* this doesn't fail on password mismatch but sets p->failed */
 	ret = read_auth_pass(pctx);
@@ -259,7 +256,7 @@ static int plain_auth_init(void **ctx, void *pool, const common_auth_init_st *in
 
 	if (pctx->cpass[0] == 0 && pctx->failed == 0) {
 		/* if there is no password set, nor an OTP file; don't ask for password */
-		if (otp_file == NULL)
+		if (pctx->config->otp_file == NULL)
 			return 0;
 
 		/* only OTP is present */
@@ -312,14 +309,15 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 	struct plain_ctx_st *pctx = ctx;
 	const char *p;
 
-	p = crypt(pass, pctx->cpass);
-	if (p == NULL) {
-		pctx->failed = 1;
+	if (pctx->cpass[0] != 0) {
+		p = crypt(pass, pctx->cpass);
+		if (p == NULL) {
+			pctx->failed = 1;
+		} else if (strcmp(p, pctx->cpass) != 0)
+			pctx->failed = 1;
 	}
 
-	if (pctx->failed || (pctx->cpass[0] != 0
-	    && strcmp(p, pctx->cpass) != 0)) {
-
+	if (pctx->failed) {
 		if (pctx->retries++ < MAX_PASSWORD_TRIES-1) {
 			pctx->pass_msg = pass_msg_failed;
 			return ERR_AUTH_CONTINUE;
@@ -331,7 +329,7 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 		}
 	}
 
-	if (pctx->cpass[0] == 0 && otp_file == NULL) {
+	if (pctx->cpass[0] == 0 && pctx->config->otp_file == NULL) {
 		syslog(LOG_AUTH,
 		       "plain-auth: user '%s' has empty password and no OTP file configured",
 		       pctx->username);
@@ -339,7 +337,7 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 	}
 
 #ifdef HAVE_LIBOATH
-	if (otp_file != NULL) {
+	if (pctx->config->otp_file != NULL) {
 		int ret;
 		time_t last;
 
@@ -350,7 +348,7 @@ static int plain_auth_pass(void *ctx, const char *pass, unsigned pass_len)
 		}
 
 		/* no primary password -> check OTP */
-		ret = oath_authenticate_usersfile(otp_file, pctx->username,
+		ret = oath_authenticate_usersfile(pctx->config->otp_file, pctx->username,
 			pass, HOTP_WINDOW, NULL, &last);
 		if (ret != OATH_OK) {
 			syslog(LOG_AUTH,
@@ -491,7 +489,7 @@ static void plain_group_list(void *pool, void *additional, char ***groupname, un
 const struct auth_mod_st plain_auth_funcs = {
 	.type = AUTH_TYPE_PLAIN | AUTH_TYPE_USERNAME_PASS,
 	.allows_retries = 1,
-	.global_init = plain_global_init,
+	.vhost_init = plain_vhost_init,
 	.auth_init = plain_auth_init,
 	.auth_deinit = plain_auth_deinit,
 	.auth_msg = plain_auth_msg,

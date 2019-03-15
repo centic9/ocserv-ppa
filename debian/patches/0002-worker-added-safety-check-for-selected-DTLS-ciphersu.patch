@@ -1,0 +1,48 @@
+From e0f847b98478299da140b41fd2309afea387d240 Mon Sep 17 00:00:00 2001
+From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Date: Sat, 19 Jan 2019 17:03:52 +0100
+Subject: [PATCH 06/12] worker: added safety check for selected DTLS
+ ciphersuite prior to use
+
+This avoids a crash when no DTLS ciphersuite is selected and adds a
+test case for negotiation without DTLS.
+
+---
+ src/worker-http.c      |  1 -
+ src/worker-vpn.c       |  4 ++--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/worker-http.c b/src/worker-http.c
+index 67a88602..b22427c9 100644
+--- a/src/worker-http.c
++++ b/src/worker-http.c
+@@ -432,7 +432,6 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
+ 	        req->selected_ciphersuite = cand;
+ 
+ 		break;
+-
+ 	case HEADER_DTLS12_CIPHERSUITE:
+ 		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
+ 			break;
+diff --git a/src/worker-vpn.c b/src/worker-vpn.c
+index 3988cd13..2988d2ea 100644
+--- a/src/worker-vpn.c
++++ b/src/worker-vpn.c
+@@ -1751,7 +1751,7 @@ static void calc_mtu_values(worker_st * ws)
+ 						gnutls_cipher_get(ws->session),
+ 						gnutls_mac_get(ws->session));
+ 			}
+-		} else {
++		} else if (ws->req.selected_ciphersuite) {
+ 			ws->dtls_crypto_overhead =
+ 			    tls_get_overhead(ws->req.
+ 					     selected_ciphersuite->gnutls_version,
+@@ -2199,7 +2199,7 @@ static int connect_handler(worker_st * ws)
+ 			oclog(ws, LOG_INFO, "DTLS ciphersuite: "DTLS_PROTO_INDICATOR);
+ 			ret =
+ 			    cstp_printf(ws, "X-DTLS-CipherSuite: "DTLS_PROTO_INDICATOR"\r\n");
+-		} else {
++		} else if (ws->req.selected_ciphersuite) {
+ 			ret =
+ 			    cstp_printf(ws, "X-DTLS-Session-ID: %s\r\n",
+ 				       ws->buffer);

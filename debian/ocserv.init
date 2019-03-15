@@ -15,7 +15,7 @@ DESC="OpenConnect SSL VPN server"
 
 DAEMON=/usr/sbin/ocserv
 DAEMON_CONFIG=/etc/${NAME}/${NAME}.conf
-DAEMON_PIDFILE=/var/run/${NAME}.pid
+DAEMON_PIDFILE=/run/${NAME}.pid
 DAEMON_ARGS="--pid-file $DAEMON_PIDFILE --config $DAEMON_CONFIG"
 
 test -x $DAEMON || exit 0
