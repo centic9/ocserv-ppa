@@ -1,0 +1,94 @@
+#!/bin/sh
+#
+# Copyright (C) 2013 Nikos Mavrogiannopoulos
+#
+# This file is part of ocserv.
+#
+# ocserv is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# ocserv is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GnuTLS; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+SERV="${SERV:-../src/ocserv}"
+srcdir=${srcdir:-.}
+builddir=${builddir:-.}
+NO_NEED_ROOT=1
+PORT=4449
+
+NTLMSSP_CONF=""
+for conf in /etc/gss/mech.d/mech.ntlmssp.conf /etc/gss/mech.d/ntlmssp.conf;do
+	if test -f ${conf};then
+		NTLMSSP_CONF=${conf}
+	fi
+done
+
+if test -z "$NTLMSSP_CONF";then
+	echo "GSS NTLM SSP was not found"
+	exit 77
+fi
+
+echo $NTLMSSP_CONF
+
+$SERV --version 2>&1|grep gssapi >/dev/null 2>&1
+if [ $? != 0 ];then
+	exit 77
+fi
+
+. `dirname $0`/common.sh
+
+echo "Testing local backend with gssapi... "
+
+export NTLM_USER_FILE=${builddir}/ntlm.pass
+echo "TESTINVALID:testinvalid:testpass" >$NTLM_USER_FILE
+echo "TESTINVALID:testinvalid:wrongpass" >$NTLM_USER_FILE.wrong
+
+VERBOSE=1
+
+update_config test-gssapi.config
+launch_sr_server -d 1 -f -c ${CONFIG} & PID=$!
+wait_server $PID
+
+#CURLOPTS="--cacert ${srcdir}/certs/ca.pem"
+CURLOPTS="--insecure"
+
+echo "Connecting with curl/negotiate... "
+LD_PRELOAD=libsocket_wrapper.so curl https://testinvalid:testpass@$ADDRESS:$PORT ${CURLOPTS} --negotiate -f -v ||
+	fail $PID "Could not connect to server"
+
+export NTLM_USER_FILE=${builddir}/ntlm.pass.wrong
+echo "Connecting with curl and wrong password... "
+LD_PRELOAD=libsocket_wrapper.so curl https://testinvalid:wrongpass@$ADDRESS:$PORT ${CURLOPTS} --negotiate -f -v &&
+	fail $PID "Connected to server with wrong password"
+
+kill $PID
+wait
+
+echo ""
+echo "Testing local backend with gssapi and local-map on... "
+sleep 2
+
+# Test whether no-local-map is by default true
+update_config test-gssapi-local-map.config
+launch_sr_server -d 1 -f -c ${CONFIG} & PID=$!
+wait_server $PID
+
+echo "Connecting with curl... "
+LD_PRELOAD=libsocket_wrapper.so curl https://testinvalid:testpass@$ADDRESS:$PORT  ${CURLOPTS} --negotiate -f -v &&
+	fail $PID "Connected to server even when local map was required"
+
+rm -f ${builddir}/ntlm.pass
+rm -f ${builddir}/ntlm.pass.wrong
+
+kill $PID
+wait
+
+exit 0

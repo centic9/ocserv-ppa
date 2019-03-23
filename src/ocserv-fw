@@ -1,0 +1,279 @@
+#!/bin/sh
+#
+# Copyright (C) 2015 Red Hat, Inc.
+# Copyright (C) 2016 Lance LeFlore
+#
+# This file is part of ocserv.
+#
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This file is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this file; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# Input is from environment:
+#
+# OCSERV_RESTRICT_TO_ROUTES: If set to '1' the user should be restricted
+#                    to accessing the OCSERV_ROUTES and prevented from accessing
+#                    OCSERV_NO_ROUTES.
+#
+# OCSERV_ROUTES:     A space separated list of IPv4 and IPv6 routes to
+#                    which the user has access. If empty or not set the
+#                    user has default route.
+#
+# OCSERV_ROUTES4:    A version of OCSERV_ROUTES with IPv4 addresses only.
+# OCSERV_ROUTES6:    A version of OCSERV_ROUTES with IPv6 addresses only.
+#
+# OCSERV_NO_ROUTES:  A space separated list of IPv4 and IPv6 routes to
+#                    which the user has NO access.
+#
+# OCSERV_NO_ROUTES4: A version of OCSERV_NO_ROUTES with IPv4 addresses only.
+# OCSERV_NO_ROUTES6: A version of OCSERV_NO_ROUTES with IPv6 addresses only.
+#
+# OCSERV_DNS:        A space-separated list of DNS servers the user has access to.
+# OCSERV_DNS4:       A version of OCSERV_DNS with IPv4 addresses only.
+# OCSERV_DNS6:       A version of OCSERV_DNS with IPv6 addresses only.
+#
+# OCSERV_DENY_PORTS: A space-separated list of port types and ports that the user
+#                    should be denied access to. An example of the format is:
+#                    "tcp 443 udp 312 sctp 999 icmp all esp all icmpv6 all"
+#
+# OCSERV_ALLOW_PORTS: A space-separated list of port types and ports that the user
+#                     should be granted access to. If set the user must be denied access
+#                     to any other ports. An example of the format is:
+#                     "tcp 443 udp 312 sctp 999 icmp all esp all icmpv6 all"
+
+PATH=/sbin:/usr/sbin:$PATH
+
+COMMENT="ocserv-fw"
+FORWARD_CHAIN="FORWARD"
+SEC_FORWARD_CHAIN="FORWARD-${COMMENT}-${DEVICE}"
+
+if test "$1" = "--removeall";then
+	eval "$(iptables -S | grep "comment ${COMMENT}" | sed -e 's/-A/-D/g' -e 's/^-/iptables -/g')"
+	eval "$(ip6tables -S | grep "comment ${COMMENT}" | sed -e 's/-A/-D/g' -e 's/^-/ip6tables -/g')"
+
+	#delete chains
+	eval "$(iptables -S | grep "INPUT-${COMMENT}" | sed -e 's/-N/-X/g' -e 's/^-/iptables -/g')"
+	eval "$(ip6tables -S | grep "INPUT-${COMMENT}" | sed -e 's/-N/-X/g' -e 's/^-/ip6tables -/g')"
+	exit 0
+fi
+
+execute_next_script() {
+	if test -n "${OCSERV_NEXT_SCRIPT}";then
+		TMP_SCRIPT="${OCSERV_NEXT_SCRIPT}"
+		unset OCSERV_NEXT_SCRIPT
+		/bin/sh "${TMP_SCRIPT}"
+	fi
+}
+
+clean_all_rules() {
+	eval "$(iptables -S | grep "comment ${COMMENT}" | grep -e "-[io] ${DEVICE}" | sed -e 's/-A/-D/g' -e 's/^-/iptables -/g')" 2>/dev/null
+	eval "$(ip6tables -S | grep "comment ${COMMENT}" | grep -e "-[io] ${DEVICE}" | sed -e 's/-A/-D/g' -e 's/^-/ip6tables -/g')" 2>/dev/null
+	iptables -X ${SEC_FORWARD_CHAIN} 2>/dev/null
+	ip6tables -X ${SEC_FORWARD_CHAIN} 2>/dev/null
+}
+
+if test "${REASON}" = "connect";then
+	#clear any leftover rules for this device
+	clean_all_rules
+	# assume FORWARD policy is REJECT - allow return traffic
+	# may also need to turn kernel knob to allow forwarding
+	iptables -I ${FORWARD_CHAIN} \
+		-o ${DEVICE} \
+		-m conntrack --ctstate RELATED,ESTABLISHED \
+		-j ACCEPT -m comment --comment "${COMMENT}"
+	else
+	if test "${REASON}" = "disconnect";then
+		clean_all_rules
+		set -e
+		execute_next_script
+		exit 0
+	else
+		logger -t ocserv-fw "unknown reason ${REASON}"
+		exit 1
+	fi
+fi
+
+set -e
+
+allow_dns() {
+	"$1" -A ${FORWARD_CHAIN} -i ${DEVICE} -p udp -d "$2" --dport 53 -j ACCEPT --match comment --comment "${COMMENT}"
+
+	"$1" -A ${FORWARD_CHAIN} -i ${DEVICE} -p tcp -d "$2" --dport 53 -m state --state NEW,ESTABLISHED -j ACCEPT --match comment --comment "${COMMENT}"
+}
+
+allow_dns4() {
+	allow_dns iptables "$1"
+}
+
+allow_dns6() {
+	allow_dns ip6tables "$1"
+}
+
+allow_route() {
+	"$1" -A ${SEC_FORWARD_CHAIN} -i ${DEVICE} -d "$2" -j ACCEPT --match comment --comment "${COMMENT}"
+}
+
+allow_route4() {
+	allow_route iptables "$1"
+}
+
+allow_route6() {
+	allow_route ip6tables "$1"
+}
+
+disallow_route() {
+	"$1" -A ${SEC_FORWARD_CHAIN} -i ${DEVICE} -d "$2" -j REJECT --match comment --comment "${COMMENT}"
+}
+
+disallow_route4() {
+	disallow_route iptables "$1"
+}
+
+disallow_route6() {
+	disallow_route ip6tables "$1"
+}
+
+disallow_all() {
+	iptables -A ${FORWARD_CHAIN} -i ${DEVICE} -j REJECT --match comment --comment "${COMMENT}"
+	ip6tables -A ${FORWARD_CHAIN} -i ${DEVICE} -j REJECT --match comment --comment "${COMMENT}"
+}
+
+allow_all() {
+	iptables -A ${FORWARD_CHAIN} -i ${DEVICE} -j ACCEPT --match comment --comment "${COMMENT}"
+	ip6tables -A ${FORWARD_CHAIN} -i ${DEVICE} -j ACCEPT --match comment --comment "${COMMENT}"
+}
+
+allow_port() {
+	proto=$1
+	port=$2
+
+	case "$proto" in
+		icmp)
+			iptables -A FORWARD -i ${DEVICE} -p $proto -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+			;;
+		icmpv6)
+			ip6tables -A FORWARD -i ${DEVICE} -p $proto -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+			;;
+		*)
+			iptables -A FORWARD -i ${DEVICE} -p $proto --dport $port -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+			ip6tables -A FORWARD -i ${DEVICE} -p $proto --dport $port -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+			;;
+	esac
+}
+
+deny_port() {
+	proto=$1
+	port=$2
+
+	case "$proto" in
+		icmp)
+			iptables -A ${FORWARD_CHAIN} -i ${DEVICE} -p $proto -j REJECT --match comment --comment "${COMMENT}"
+			;;
+		icmpv6)
+			ip6tables -A ${FORWARD_CHAIN} -i ${DEVICE} -p $proto -j REJECT --match comment --comment "${COMMENT}"
+			;;
+		*)
+			iptables -A ${FORWARD_CHAIN} -i ${DEVICE} -p $proto --dport $port -j REJECT --match comment --comment "${COMMENT}"
+			ip6tables -A ${FORWARD_CHAIN} -i ${DEVICE} -p $proto --dport $port -j REJECT --match comment --comment "${COMMENT}"
+			;;
+	esac
+}
+
+disallow_all_ports() {
+	iptables -A FORWARD -i ${DEVICE} -j REJECT --match comment --comment "${COMMENT}"
+	ip6tables -A FORWARD -i ${DEVICE} -j REJECT --match comment --comment "${COMMENT}"
+}
+
+# Allow DNS lookups
+for i in $OCSERV_DNS4;do
+	allow_dns4 $i
+done
+
+# block or allow routes
+for i in $OCSERV_DNS6;do
+	allow_dns6 $i
+done
+
+# create the chain
+FORWARD_CHAIN="${SEC_FORWARD_CHAIN}"
+iptables -N "${FORWARD_CHAIN}"
+ip6tables -N "${FORWARD_CHAIN}"
+
+# block ports - if needed
+if test -n "${OCSERV_DENY_PORTS}";then
+	set ${OCSERV_DENY_PORTS}
+	while test $# -gt 1; do
+		proto=$1
+		port=$2
+
+		deny_port $proto $port
+		if test $# -gt 1;then
+			shift 2
+		else
+			break
+		fi
+	done
+else
+	if test -n "${OCSERV_ALLOW_PORTS}";then
+		set ${OCSERV_ALLOW_PORTS}
+		while test $# -gt 1; do
+			proto=$1
+			port=$2
+
+			allow_port $proto $port
+			if test $# -gt 1;then
+				shift 2
+			else
+				break
+			fi
+		done
+		disallow_all_ports
+	fi
+fi
+
+if test "${OCSERV_RESTRICT_TO_ROUTES}" = "1";then
+	for i in $OCSERV_NO_ROUTES4;do
+		disallow_route4 $i
+	done
+
+	for i in $OCSERV_NO_ROUTES6;do
+		disallow_route6 $i
+	done
+
+	if test -n "$OCSERV_ROUTES";then
+
+		for i in $OCSERV_ROUTES4;do
+			allow_route4 $i
+		done
+
+		for i in $OCSERV_ROUTES6;do
+			allow_route6 $i
+		done
+
+		# no default route, don't allow anything except the configured routes
+		disallow_all
+	else
+		allow_all
+	fi
+else
+	# we still need to allow traffic through if OCSERV_RESTRICT_TO_ROUTES is not true
+	iptables -A ${SEC_FORWARD_CHAIN} -i ${DEVICE} -j ACCEPT -m comment --comment "${COMMENT}"
+fi
+
+# send traffic to the route chain
+iptables  -A FORWARD -i ${DEVICE} -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+ip6tables -A FORWARD -i ${DEVICE} -j ${SEC_FORWARD_CHAIN} --match comment --comment "${COMMENT}"
+
+execute_next_script
+
+exit 0

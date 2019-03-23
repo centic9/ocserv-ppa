@@ -1,0 +1,749 @@
+* Version 0.11.9 (released 2017-10-09)
+- Fixed bug which caused the acceptable of invalid IPv4 address as valid (#112).
+- Fixed compatibility with gnutls 3.3.8 (used in debian jessie) by avoiding the
+  use of the 'VERS-ALL' priority string which was introduced in 3.3.24.
+- Fixed null pointer dereference when parsing locked accounts in plain
+  password authentication.
+- Add support for RSA-PSS and Ed25519 private keys when used with GnuTLS 3.6.0.
+- ocpasswd: when locking an account multiple times, add the '!' character
+  only once. Based on patch by Frank Huang.
+
+
+* Version 0.11.8 (released 2017-05-03)
+- Corrected MTU adjustment due to MSS. Previously the MSS value was converted to a
+  lower than the actual MTU resulting to worse (lower) MTU estimates.
+  Furthermore, in Linux systems switch to the more accurate TCP_INFO socket option to
+  obtain MTU information.
+- Disable DTLS-PSK when operating under a unix socket. When no TLS session is available
+  it is not possible to derive PSK keys.
+- Fixed several issues in KKDCP protocol support; i.e., allow larger messages
+  than 16kb and address issue with communication with main.
+- Added support for haproxy's protocol v1 format. That allows to utilize
+  ocserv, even with servers supporting the old protocol.
+- Report additional statistics to syslog and occtl, such as authentication failures,
+  total sessions handled, total amount of data transferred, average session and
+  authentication time.
+- Fix crash in main on sending reply message to worker for a banned IP.
+- Increased the default max-ban-score to 8 wrong password attempts, and
+  increased the default IP ban time to 20 minutes.
+- occtl: added support for displaying user country in 'show user' output.
+  Requires occtl to be compiled with libgeoip support.
+
+
+* Version 0.11.7 (released 2017-02-12)
+- Fixed compilation issue related to autogen file re-use
+- Send the "vpn-profile-manifest" fields after successful authentication.
+  This enables openconnect to retrieve the XML configuration.
+- Enhanced the cert-user-oid config option to read the SAN(rfc822name) value.
+  In that case, the username will be read from the subject alternative
+  name of the certificate rather than the DN. Based on patch by Johannes Sjøkvist.
+- Do not log the real internal session ID as part of occtl or radius, 
+  but instead log a masked value. That ensures that access to log files or
+  radius is not sufficient to access an existing session.
+- radius: Handle the special Framed-IP-Address values 255.255.255.254 and
+  255.255.255.255. They are currently handled as if the Framed-IP-Address
+  field was not present; in both cases the server assigns the address.
+- radius: on wrong password, forward any message received by radius server
+  to the client as prompt. That utilizes the Reply-Message field as sent
+  by the server.
+- ocserv-fw: Fixed chain creation when only restrict-user-to-routes is set,
+  and end all traffic to the device-specific forwarding chain. Patch by
+  John Thiltges.
+
+
+* Version 0.11.6 (released 2016-11-14)
+- ocserv: Improved detection of mobile clients (for android and ios clients)
+- ocserv: Update the worker's ID on Radius accounting messages.
+  That is, even if we initially advertize the ID of the worker
+  handling the client as NAS-Port, the client may eventually end-up
+  being served by another process with different ID. In that case we make
+  sure that the radius server is notified on the next accounting message.
+  If you are using radius see doc/README.radius.md about NAS-Port, since
+  that behavior may cause issues in freeradius installations.
+- ocserv: Added config option 'switch-to-tcp-timeout'. That allows an
+  automatic switch to TCP in case of no received UDP traffic for
+  certain time (Patch by Andrew Patrikalakis).
+- ocserv: Pre-load the OCSP response file; that way worker processes can
+  serve it, even if they have no access to it.
+- ocserv: When compiled with GnuTLS 3.5.6 automatically set DH
+  parameters from the known set.
+
+
+* Version 0.11.5 (released 2016-09-23)
+- Added getrandom() to the accepted list of seccomp calls. This allows ocserv
+  to run with gnutls 3.5.x under recent kernels.
+- ocserv: relaxed the restrictions for DTLS-PSK negotiation. No longer
+  require that the cipher/mac combination of TLS match the DTLS one. Introduced
+  config option 'match-tls-dtls-ciphers' for this purpose.
+- ocserv: added the config option 'dtls-psk'; this option allows to disable
+  the DTLS-PSK protocol and utilize only the legacy version.
+- ocserv: added the config option 'dtls-legacy'. When disabled it will disable the
+  legacy pre-draft-DTLS negotiation.
+
+
+* Version 0.11.4 (released 2016-08-05)
+- ocserv: Corrected the IPv6 address advertisement to client. Instead of
+  using the server's address prefix use the prefix assigned to client.
+- ocserv: Added per-user-configuration option hostname.
+- ocserv: Corrected the assignment of the tun device group membership in
+  Linux.
+- ocserv: Do not hard fail when TUNSETGROUP ioctl fails with EINVAL. This
+  allows ocserv to operate under older kernels.
+- ocserv: Corrected crash on worker process after client DTLS IP/port change.
+- ocserv: reworked the MTU discovery. Disable MTU discovery when not requested
+  and set the minimum packet size to 1280 for IPv6 and 800 bytes for IPv4. When
+  the MTU discovery fails to calculate an MTU over the minimum then disable MTU
+  discovery and rely on packet fragmentation. Also set the DPD packet size to
+  equal the current MTU, to allow detecting broken DTLS connections.
+- ocserv: updated the DTLS negotiation to conform to the latest openconnect
+  protocol draft. This keeps the previous anyconnect DTLS negotiation based on
+  resumption as legacy, but adds a new negotiation based on DTLS with PSK.
+
+
+* Version 0.11.3 (released 2016-06-16)
+- ocserv: added '/cert.pem' and '/cert.cer' HTTP handlers. These provide
+  the server's certificate as PEM and DER files.
+- ocserv: added '/ca.pem' and '/ca.cer' HTTP handlers. These provide
+  the server's CA certificate as PEM and DER files. The handlers work
+  only if the CA is part of the server's certificate chain.
+- ocserv: use the same work around for openconnect v3 clients in
+  earlier versions. This allows very old openconnect clients to connect
+  in ocserv. Addresses issue #51.
+- ocserv: added the host-update-script config option. This option
+  allows to specify a script to run once the hostname of the connected
+  user is known.
+- ocserv-fw: fixed to correctly apply the rules in the forward chain. Report
+  and fix by Lance LeFlore.
+- occtl: Corrected the printing of cookie last modification time.
+- occtl: Print the user's cookie on occtl show user cmd.
+
+
+* Version 0.11.2 (released 2016-04-25)
+- radius: replaced experimental Group-Name with Class attribute;
+  the current format of Class "OU=group1;group2" allows to handle
+  multiple groups.
+- Do not require a client hello handshake packet to forward a UDP session;
+  that is, allow any small DPD packets to be sent to the correct
+  worker process.
+- Do not allow to combine radius' groupconfig=true with config-per-user;
+  these options are incompatible with each other.
+- Fixed issue in FreeBSD, preventing the server's startup when on
+  background. Reported by Carlos J Puga Medina.
+- occtl: Fixes in the presentation of iroutes and cookies.
+
+
+* Version 0.11.1 (released 2016-03-19)
+- Several *BSD compilation fixes. Reported by Björn Ketelaars.
+- The ipv4-network option in user configuration allows for prefix. Reported
+  by Frank Rosquin.
+- Simplified the cookie handling code by making it an index to sec-mod's
+  internal state. This eliminates the need for cookie rekey.
+- Simplified the UDP session (re)forwarding from main to worker. Instead
+  of applying time-based heuristics to figure a valid session being
+  re-forwarded, attempt to decrypt the first message and keep the new
+  descriptor if succeeded.
+- Added getpid() to seccomp filter of allowed system calls.
+- occtl: Added the show cookies command to allow viewing all existing
+  valid for authentication cookies.
+
+
+* Version 0.11.0 (released 2016-02-19)
+- Allow the import of a chain of more than 2 certificates when using
+  GnuTLS 3.4.x. Reported by Frank Rosquin.
+
+
+* Version 0.11.0rc1 (released 2016-02-03)
+- Radius: send the Connect-Info attribute with the user agent string
+  on authentication.
+- Updated support for CHACHA20-POLY1305 to conform to latest draft
+- Added watchdog to worker processes to ensure they are killed
+  under unexpected long delays (e.g., the process being blocked).
+- Certificates and private keys are reloaded on server reload (SIGHUP).
+- The main event loop memory is deinitialized after fork to reduce
+  memory taken by worker processes.
+- Return HTML error message on 404, patch by Kevin Cernekee.
+- Remove all uses of select() in main or worker processes allowing
+  the number of connected clients to exceed 1024.
+
+
+* Version 0.11.0rc0 (released 2016-01-08)
+- Simplified configuration semantics. Any routes or no-routes set on the
+  per-user configuration file will override any global ones instead of
+  being appended.
+- Added config option 'append-routes'. If set to true it will restore
+  the old configuration semantics of appending the global routes to per
+  user/group config.
+- Added the 'restrict-user-to-ports' configuration option. This prevents
+  the user from connecting to the given protocol/port combinations. It is
+  intended to be used as mechanism to restrict certain users to accessing
+  specific services (e.g., only web or ssh). Combined with
+  'restrict-user-to-routes' it can be used to restrict a user to accessing
+  only a specific service to a specific server.
+- Switched to an event-driven design in main; using libev
+- occtl: Added the show events command to allow viewing the users connecting in
+  real time. 
+
+
+* Version 0.10.9 (released 2015-10-07)
+- When compiled with GnuTLS 3.4 automatically sort the certificate list
+  to be imported.
+- Reload the CRL during periodic maintaince if its modification time
+  changes.
+- Address issue with duplicate check failing on IPv6 addresses (issue #5).
+- Added the ability to specify a UsersFile in plain auth for using an OTP.
+  This allows to use an OTP 2nd factor authentication without having
+  to rely on PAM. This change, also enables the usage of an empty password
+  field in the password file if an OTP file is present.
+- Allow loading DER-encoded CRLs.
+- Re-added the PAM accounting method. That accounting method can be combined
+  with any authentication method, and can be used to check for a valid
+  system account.
+
+
+* Version 0.10.8 (released 2015-09-04)
+- Pass the proxy protocol information at earlier stage to main process,
+  to allow the correct information to be passed at the connect script
+  and occtl. Reported by Niels Peen.
+- Added the IP_REAL_LOCAL environment variable to scripts. This passes
+  the local IP the client connected to.
+- The PAM accounting method was dropped as there was no practical
+  usage of it, the way it was implemented.
+- When assigning IPv6 addresses use the whole available netmask.
+- occtl: Print the local IP the client connected to, with the client
+  information.
+- occtl: Print the configured for the client split-dns domains.
+
+
+* Version 0.10.7 (released 2015-08-06)
+- Added a fuzzying factor to CPU intensive, or radius communication
+  tasks when initiated by worker process. That avoids a very high load
+  periodically, e.g., when multiple clients connect at the same time.
+- Added support for haproxy's protocol v2 format. That allows to
+  report the correct client IP even on proxied sessions. It introduces
+  the configuration option listen-proxy-proto.
+- occtl: added -n/--no-pager option. That allows to disable pager
+  explicitly.
+- occtl: fixed several cases of invalid JSON output.
+
+
+* Version 0.10.6 (released 2015-07-01)
+- Transmit packets to the last incoming source, allowing faster switch
+  of the communication channel.
+- The worker processes will utilize the UDP socket address (if any),
+  when reporting peer's address if the listen-clear-file option is set.
+- Lifted the limit on the number of configuration options. That allows to
+  add an "unlimited" number of 'route' options.
+- Support encrypted key files. That adds the key-pin and srk-pin
+  configuration options.
+- The dbus communication option has been dropped.
+- Radius: depend on radcli radius library. http://radcli.github.io/radcli/
+- occtl: added -j/--json option. That allows to output in a JSON format.
+
+
+* Version 0.10.5 (released 2015-05-24)
+- Added tgt-freshness-time option for gssapi/Kerberos authentication
+  option. That allows to specify the maximum number of seconds after
+  which a reauthentication with Kerberos is required to login to VPN.
+- main/sec-mod: impose long timeouts on reads from sec-mod. That would
+  prevent issues when reading in a blocked in authentication sec-mod.
+- radius: When using radius accounting with certificate authentication,
+  properly notify of user session termination.
+- radius: On definitely terminated sessions contact the radius server as
+  soon as possible. For sessions that can still be resumed the radius
+  server is contacted periodically after the cookies expire.
+- radius: consider Acct-Interim-Interval when seen by the server.
+  That will be taken into account if groupconfig=true in radius subconfig.
+- Added configuration options 'persistent-cookies' and 'session-timeout'.
+- radius: added support for Route-IPv6-Information, Delegated-IPv6-Prefix,
+  NAS-IPv6-Address, NAS-IP-Address, Session-Timeout.
+- Corrected desync of main and sec-mod by introducing a synchronous
+  communication socket. Reported by Mani Behrouz.
+- PAM: forward the actual prompt to worker process, and not only informational
+  messages.
+
+
+* Version 0.10.4 (released 2015-04-27)
+- sec-mod: expire sessions which are in terminated state
+
+
+* Version 0.10.3 (released 2015-04-25)
+- Detection of gnutls capabilities was made dynamic. That would allow
+  the server to be compiled with old gnutls version but still use new
+  functionality when linked with a newer version.
+- The DBUS communication channel with occtl was brought up in par
+  with the unix socket based one.
+- Fixed issues with FreeBSD tun device handling. Reports and patches
+  by Brian Chu.
+- When multiple authentication methods are set and the primary includes
+  a certificate, no longer require a certificate for all clients.
+- When receiving non-minimal DPD messages, reflect their contents.
+  This allows using DPD for MTU detection.
+- The 'try-mtu-discovery' config option was fixed to affect the DF bit
+  setting in UDP packets.
+- Invalidate cookies when the user terminates the session explicitly.
+- Fixed 'user-profile' option when isolate-workers is set to true.
+- sec-mod: Do not impose timeouts on reads from main. That would prevent
+  issues when reading in a very busy system.
+
+
+* Version 0.10.2 (released 2015-03-29)
+- Fixed issue with stats not being transmitted to sec-mod from workers
+  Reported by jacky he.
+- Fixed race condition which caused a desync between sec-mod and main
+  communication channel, if a user was connected at the time one was
+  being added ban points.
+
+
+* Version 0.10.1 (released 2015-03-15)
+- Fixed issues with the handling of clients connecting with expired
+  cookies. Reported by sskaje.
+
+
+* Version 0.10.0 (released 2015-03-10)
+- Added support for gssapi (e.g., Kerberos) authentication
+- Added support for alternative authentication methods, via enable-auth.
+  That allows to set a suffcient for login authentication method that will
+  be used as alternative to the main authentication.
+- Added support for MS-KKDCP. That is, the server can be used as an HTTP
+  proxy to a KDC.
+- Accounting was split from authentication. That way radius accounting can
+  be used in addition to any authentication method.
+- Added a score-based system for banning IP addresses. See
+  min-reauth-time, max-ban-score and ban-reset-time.
+- Better handling of SIGHUP, and documentation of the variables that
+  are updated.
+- Support for 'certificate[optional]' authentication has been removed.
+- occtl: Added commands to view banned IP list, as well as a command
+  to unban selected IPs.
+
+
+* Version 0.9.2 (released 2015-02-18)
+- Enable seccomp unconditionally for all platforms (libseccomp 2.2.0
+  is more portable).
+- Ensure that 'socket-file' is a relative path, so that is accessible
+  from both the main and worker processes.
+- Fixes in IP tun addresses assignment, and enhanced IP assigned address check.
+
+
+* Version 0.9.1 (released 2015-02-15)
+- Do not send IPv6 leases if the calculated MTU is lower than 1280.
+- Prevent the early expiry of sessions in security module; that
+  corrects session reconnections using the cookie.
+- Reduced debugging messages in debug level 1.
+- Allow forwarding empty passwords to auth backend.
+- depend on freeradius-client 1.1.7
+- fix seccomp filter in x86 systems.
+- Added per-user-configuration option explicit-ipv4, contributed
+  by Kevin Cerneke.
+- Added configuration option 'no-route' which corresponds to
+  X-CSTP-Split-Exclude.
+- Fixes in BSD systems support, contributed by Stuart Henderson.
+- Deprecated the certificate[optional] auth option.
+
+
+* Version 0.9.0 (released 2015-01-20)
+- Added native support for radius. That adds the new auth configuration
+  option "radius", which has as parameters the freeradius-client
+  configuration file and optionally the groupconfig option which
+  instructs to read configuration from radius; the stats-report-time
+  option enables interim-updates. That adds the dependency to
+  freeradius-client (see doc/README.radius).
+- Reply using the same address that received UDP packets are sent.
+- Simplify the input of IPv6 network addresses.
+- Use a separate IPC and PID namespace in Linux systems for worker
+  processes. That effectively puts each worker process in a separate
+  container. This can be enabled at compile time using --enable-linux-namespaces.
+- Configuration option 'use-seccomp' was replaced by 'isolate-workers',
+  which in addition to seccomp it enables the Linux namespaces restrictions.
+- Added support for stateless compression using LZ4 and LZS. This
+  is disabled by default. 
+
+
+* Version 0.8.9 (released 2014-12-10)
+- Added configuration option 'listen-host-is-dyndns'. That,
+  if set, notifies the client with "X-CSTP-DynDNS: true", in
+  CSTP headers.
+- When a client's IP is re-used by the same client connecting with
+  the cookie (e.g., when roaming), call the disconnect script.
+
+
+* Version 0.8.8 (released 2014-11-22)
+- When selecting a DTLS ciphersuite, try to match the TLS ciphersuite
+  if possible.
+- Use consistent ciphersuite names in occtl for TLS and DTLS
+- Report the user's name on log messages.
+- UDP session initialization utilizes hash tables to speed up the
+  finding the corresponding TCP/TLS session.
+- A new DTLS session ID will be generated for each connection. That
+  allows openconnect client to figure when a DTLS reconnection is
+  required (in the cases where the TCP/TLS session was disconnected).
+
+
+* Version 0.8.7 (released 2014-10-26)
+- Networking sockets were switched to non-blocking in worker process.
+- Fixed a crash when session control is enabled but not password
+  authentication. Reported by George Panda.
+
+
+* Version 0.8.6 (released 2014-10-05)
+- Fixes in socket handling
+
+
+* Version 0.8.5 (released 2014-10-03)
+- The comparison of XML fields is now case insensitive; that
+  addresses issues with some anyconnect clients (report and fix
+  by sskaje).
+- fixed an infinite loop when asking for group if the default group
+  is selected.
+- Added the listen-clear-file configuration option. That allows obtaining
+  plaintext HTTP sessions through a unix domain socket. That is useful
+  when combined with a forwarder HTTPS server like nginx, nxweb or haproxy.
+- Added the certificate[optional] auth configuration option. That option
+  allows to require certificate authentication in a subset of users.
+- Reverted license to GPLv2.
+
+
+* Version 0.8.4 (released 2014-08-27)
+- The bundled protobuf-c was updated to 1.0.1.
+- Fixed a crash in the work-around for the infinite loop.
+
+
+* Version 0.8.3 (released 2014-08-23)
+- user-profile is allowed in per-user configuration.
+- Allow partial match of /profiles.
+- Fixes in the worker process main loop.
+- Fixed uid check in *BSD systems; reported by Kalle Carlbark.
+- Added work-around for a possible infinite loop that could occur in
+  DTLS mode.
+
+
+* Version 0.8.2 (released 2014-07-26)
+- Solved issue with pid file being overwritten on server reload.
+- pam: reduced memory usage.
+
+
+* Version 0.8.1 (released 2014-06-28)
+
+- Fix endianess issue with internal messages.
+- FreeBSD system fixes, contributed by Brian Chu.
+- Added openconnect 3.20 compatibility.
+- Added support for session control (in PAM or any other potential
+  authentication methods). That feature is disabled by default as it
+  requires the security module to keep state for each connected user.
+- Corrected escaping of URL-encoded passwords. Patch by Hexchain Tong.
+- Fix issue which prevented reading the selected group from AnyConnect
+  clients.
+- Allow prompting the user for group selection when groups are available
+  in the certificate.
+- Forward the appropriate DNS and NBNS values when using a per-user/group
+  config. Reported by sskaje.
+- Seccomp is now compiled-in by default, and can be enabled at runtime.
+- ocpasswd: Added --delete parameter.
+
+
+* Version 0.8.0 (released 2014-05-31)
+- By default unix sockets are being used for the communication with
+  occtl, instead of D-BUS. That allows for occtl to connect to any
+  of the running servers in the system, by specifying '-s' and the
+  server's occtl socket file.
+- Ocserv was modified to utilize talloc, the samba allocation
+  library which can prevent memory leaks on the main server. As
+  this is not a memory intensive server the overhead should not be
+  significant.
+- Ocserv was refactored and user authentication was moved to the security
+  module. That ensures that there can be no critical memory leaks to
+  the worker process.
+- Added the default-user-config and default-group-config configuration
+  options. These allow setting a configuration file that will be loaded
+  if a user-specific or group-specific configuration file isn't found.
+- Added the predictable-ips configuration option. That option allows
+  to disable the default "stable" IP assignment, and use completely
+  random assignment.
+- The 'select-group' and 'auto-select-group' configuration directives were
+  added; select-group accepts groups that a connecting client will be
+  prompted to select from. Additionally a client with a certificate that
+  contains multiple groups will also be prompted to select one.
+- The 'route' configuration directive accepts the keyword 'default',
+  and will return a default route irrespective of any other route
+  directives. That allows overriding existing routes with a default
+  route for specific users and groups.
+- The cookies can be limited to the specific IP they were granted to.
+- Cookies are now valid during the whole connection period + a timeout
+  value after disconnection. That deprecates the cookie-validity config
+  option and introduces the cookie-timeout option.
+- Added the proxy-url configuration option to allow sending a proxy URL.
+- License was upgraded to GPLv3.
+
+
+* Version 0.3.6 (released 2014-05-24)
+
+- Use a variant of memset() that cannot be optimized out while
+  overwritting critical parameters.
+
+
+* Version 0.3.5 (released 2014-05-08)
+
+- Corrected issue in the stats reporting for resumed processes and
+  modified its sending to be periodically, in addition to the worker
+  process termination time (adds the new config file variable
+  stats-send-time).
+- Added the STATS_DURATION script environment variable which reports
+  the duration of the session in seconds.
+
+
+* Version 0.3.4 (released 2014-05-01)
+
+- Execute disconnect script for users that their IP was hijacked by a
+  cookie reconnection.
+- Several small bug fixes found by coverity.
+- When receiving unexpected UDP packets, check if they match a known IP and
+  forward them appropriately.
+- The disconnect script will now receive the STATS_BYTES_IN and
+  STATS_BYTES_OUT variables that contain the number of bytes transferred
+  from the TUN device.
+- Fix segmentation fault during worker process exit when seccomp
+  is enabled.
+
+
+* Version 0.3.3 (released 2014-04-08)
+
+- When sending IPv6 link-local addresses to peer do not include the
+  zone-info.
+- MTU calculations are now based on X-CSTP-Base-MTU which provides a
+  reasonable value that doesn't depend on the negotiated ciphersuite.
+- No longer send IPv6 information to CISCO clients that may not be able
+  to handle it.
+- Updated CRL support and documentation.
+
+
+* Version 0.3.2 (released 2014-03-13)
+
+- Allow a number of retries (3) in plain password authentication.
+- Added doc/profile.xml to the distribution.
+- ocserv's '-d' option accepts a numeric argument (0-9) that gradualy
+  increases verbosity.
+- Added the 'mobile-dpd' config option. That allows providing a
+  longer DPD value to mobile clients to prevent waking them up
+  too often.
+- Added the 'idle-timeout' and 'mobile-idle-timeout' config
+  options. They ensure that an idle session will be disconnected.
+- Added the 'rekey-method' config option. With this option the
+  advertized rekey method to the client can be overriden.
+- occtl will now print the bandwidth limits, routes, iroutes, dns
+  and nbns values per user.
+- Added configure options to disable checking for certain libraries,
+  and disable features on request.
+- Corrected issue where a client disconnection was not being detected.
+- Updated the included http-parser.
+
+
+* Version 0.3.1 (released 2014-02-16)
+
+- Corrected decoding of cookies. That will prevent issues where
+  the server is unable to parse client cookies.
+- Changed the method X-CSTP-MTU is taken into account to avoid
+  smaller MTU sizes than the intended.
+- Corrected IPv6 address assignment in Linux (the equivalent code
+  for BSD-derivatives is untested).
+- Default configuration file changed to /etc/ocserv/ocserv.conf and
+  default password file for ocpasswd to /etc/ocserv/ocpasswd.
+- Added support for multiple DNS and NBNS servers in ocserv.conf.
+  The 'local' keyword is no longer supported.
+- Added the new config options split-dns and custom-header.
+- When seccomp is being used the forbidden system calls will
+  return error instead of the process being killed.
+- Rekey time can now be configured using the rekey-time option, and
+  can also be disabled when setting it to zero.
+- Rekey method changed to SSL to use rehandshakes instead of new tunnels.
+- Added support for the "new" IPv6 address sending headers. That
+  is enabled if the client sends "X-CSTP-Full-IPv6-Capability: true".
+- occtl: fixed gathering of interface statistics.
+
+
+* Version 0.3.0 (released 2014-01-24)
+
+- Added occtl a control tool for ocserv, that can be used to query
+  the server about the connected users, and perform certain actions
+  such as reload the server's configuration, stop the server or
+  disconnect a user.
+- Added support for systemd socket-activatable service.
+- Added priorities on the OpenConnect DTLS ciphersuites to ensure the
+  server has a say on the selected one (and prevent clients from negotiating
+  3DES when AES is supported by both).
+- Better display of IP addresses in log messages.
+- Added the use-dbus configuration option. It can be used to disable
+  the D-BUS service (and thus the usage of the occtl utility).
+- Added (optional) dependency on protocolbuffer-c, allowing a simpler 
+  handling and easier extension of the internal IPC protocol.
+- Added configuration option cisco-client-compat which if enabled
+  it allows a client to authenticate by sending its credentials in
+  different TLS sessions. A cookie is used to associate the sessions.
+- Updated seccomp rules to allow the system calls used by the
+  worker process.
+- Allow TLS rehandshakes on the TCP channel.
+
+
+* Version 0.2.4 (released 2014-01-08)
+
+- Better AnyConnect client support for Mac and other systems. Patch by
+  Kevin Cernekee.
+
+
+* Version 0.2.3 (released 2013-12-15)
+
+- Added X-CSTP-License header to client reply for mobile client
+  compatibility. Patch by Kevin Cernekee.
+- When a new connection presents a cookie of an existing session
+  the previous session of this cookie is disconnected (and its IP is hijacked).
+  If no previous session is active, the server will attempt to assign
+  the previously used IP.
+- If udp-port is unset or set to zero then the server will not listen
+  for UDP sessions.
+- When using PAM allow it to update the username.
+- When always-require-cert is set to false do not require a certificate
+  for cookie authentication.
+- Added the net-priority configuration option.
+- Corrected sending of DPD in the main TLS channel. Report and initial
+  fix by Kevin Cernekee.
+- Added support for cgroups in Linux.
+
+
+* Version 0.2.2 (released 2013-11-23)
+
+- The system http-parser library is used if present instead of the bundled.
+- The system libopts library is used if autogen is present.
+- Added --http-debug option to ocserv.
+- Added support for AES-GCM under DTLS 1.2 (requires GnuTLS 3.2.7).
+- More precise MTU calculation (needed in AES-GCM ciphersuites)
+- Do not use an MTU larger than the one initially proposed to openconnect.
+
+
+* Version 0.2.1 (released 2013-11-06)
+
+- Added configuration directives 'rx-data-per-sec' and 'tx-data-per-sec' to allow
+  setting bandwidth limitations globally or per group/user.
+- Call setgroups() after setgid() to avoid propagation of supplementary groups
+  to the unprivileged worker processes.
+- If a system's libopts is available as well as automake then the system's 
+  libopts will be used.
+- Added --pid-file command line option to ocserv. This overrides any
+  configured pid-file.
+- The ocserv binary is now installed in sbin instead of bin.
+
+
+* Version 0.2.0 (released 2013-10-31)
+
+- Added configuration directives 'config-per-user' and 'config-per-group'.
+  They allow loading an additional configuration file per user or per
+  group from a directory.
+- Added the ipv6-prefix configuration option to replace ipv6-netmask. The
+  new option accepts IPv6 subnet prefixes.
+- Added the 'iroute' configuration directive, applicable only to group or
+  user configuration files. It allows setting routes on the server based on
+  the connected client.
+- Corrected authentication using only certificates.
+- The UDP file descriptor from main to workers is forwarded once per minute
+  to avoid a duplicate DTLS client hello message tearing the worker's session.
+- Corrected client disconnection issues when connect-script was specified.
+
+
+* Version 0.1.7 (released 2013-10-25)
+
+- Instead of suggesting different DTLS and CSTP MTU values, suggest a single
+  value to the peer. That avoids issues with openconnect which reads one of
+  the suggested values and ignores the other.
+- Added config option "output-buffer" to allow selecting between high throughput 
+  or low latency (following similar openconnect change).
+- Enabled config option "mtu".
+- Configuration file parsing was modified to allow detecting mispellings of
+  directives and unknown options.
+
+
+* Version 0.1.6 (released 2013-09-02)
+
+- Avoid a crash on the configuration file parser when non-ascii
+  characters are present. Reported by Artem Ivantsov.
+
+
+* Version 0.1.5 (released 2013-07-15)
+
+- More robust support of PAM by allowing more than one factor 
+  authentication. In practice this allows authentication with more than
+  one password (e.g., with a permanent one and an one time password), as
+  well as changing the password.
+- Cookies are no longer stored in the server side. The server is now
+  stateless. A randomly generated key is used to encrypt and authenticate
+  the cookies sent to the client.
+- Added test suite. It requires "make check" to be run as root (in order
+  to be able to run the server).
+- Bypass the AnyConnect auto-download mechanism. Patch by Kevin Cernekee.
+- Unescape HTML-formatted passwords, or usernames. Reported by P.H. Vos.
+
+
+* Version 0.1.4 (released 2013-06-15)
+
+- On DTLS ensure that sent packets will not exceed the MTU.
+
+
+* Version 0.1.3 (released 2013-06-12)
+
+- Updated HTTP header parsing to correct issues seen with openconnect 3.20.
+- seccomp will no longer force an exit if system calls cannot be disabled.
+  Patch by Faidon Liambiotis.
+- Added support for Salsa20 + UMAC ciphers.
+- Will now check X-CSTP-Address-Type header and will not send address types
+  that were not requested.
+- X-CSTP-MTU and DTLS-MTU now contain the expected (but pretty non-sensical)
+  values.
+
+
+* Version 0.1.2 (released 2013-05-07)
+
+- Several updates to allow compilation in FreeBSD.
+- Allow prior to leasing an IP to ping it in order to check if it is in use.
+- ocpasswd accepts options to lock and unlock users.
+- Several updates to allow CISCO's anyconnect clients to connect to this
+  server.
+
+
+* Version 0.1.1 (released 2013-04-03)
+
+- MTU discovery was simplified.
+- Removed support for TLS session tickets to strengthen the
+  notion of privilege separation.
+
+
+* Version 0.1.0 (released 2013-03-23)
+
+- Corrected issue with ocsp-response configuration field.
+- Added ability to specify multiple certificate and key pairs.
+- Added support for TLS session tickets.
+- Added the "plain" authentication option, which allows a simple password
+  file format. The ocpasswd tool can be used to generate entries for this
+  file.
+- The private key operations are performed on a special process to
+  prevent loss of the private key in case of compromise of a worker
+  process.
+
+
+* Version 0.0.2 (released 2013-03-05)
+
+- Updated HTTP protocol handling (fixes issue with openconnect < 4). 
+  Reported by Mike Miller.
+- Use TCP wrappers (libwrap) when present.
+- Fixed issue with the 'local' keyword in DNS server.
+- Added configuration options 'user-profile' and 'always-require-cert' to 
+  enable non-openconnect clients to connect. They are enabled with
+  the configure option --enable-anyconnect-compat.
+- Allow setting a rate limit on the number of connections.
+- Allow setting a reconnection delay time after a failed authentication
+  attempt (added min-reauth-time option).
+- Eliminated memory leaks.
+- Auto-detect xml content for username and password (fixes interoperability
+  with newer openconnect versions).
+
+
+* Version 0.0.1 (released 2013-02-20)
+
+- First public release
+

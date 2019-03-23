@@ -1,0 +1,30 @@
+#!/bin/sh
+
+#echo $USERNAME : $REASON : $DEVICE
+
+case "$REASON" in
+  connect)
+	test "${OCSERV_DNS}" = "192.168.1.1 192.168.5.1 " && \
+	test "${OCSERV_DNS4}" = "192.168.1.1 192.168.5.1 " && \
+	test "${OCSERV_ROUTES}" = "192.168.1.0/255.255.255.0 192.168.5.0/255.255.255.0 " && \
+	test "${OCSERV_ROUTES4}" = "192.168.1.0/255.255.255.0 192.168.5.0/255.255.255.0 " && \
+	echo > connect.ok
+	;;
+  disconnect)
+  	if ! test -z "$DEVICE";then
+	  	#ifconfig $DEVICE
+	  	#if test "$?" = "0";then
+		test "${OCSERV_DNS}" = "192.168.1.1 192.168.5.1 " && \
+		test "${OCSERV_DNS4}" = "192.168.1.1 192.168.5.1 " && \
+		test "${OCSERV_ROUTES}" = "192.168.1.0/255.255.255.0 192.168.5.0/255.255.255.0 " && \
+		test "${OCSERV_ROUTES4}" = "192.168.1.0/255.255.255.0 192.168.5.0/255.255.255.0 " && \
+	  	echo > disconnect.ok
+		#fi
+	fi
+	;;
+  "host-update")
+  	echo > host-update.ok
+	;;
+esac
+
+exit 0

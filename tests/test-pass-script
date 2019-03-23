@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# Copyright (C) 2013-2016 Nikos Mavrogiannopoulos
+#
+# This file is part of ocserv.
+#
+# ocserv is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# ocserv is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GnuTLS; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+SERV="${SERV:-../src/ocserv}"
+srcdir=${srcdir:-.}
+builddir=${builddir:-.}
+PORT=4448
+
+. `dirname $0`/common.sh
+
+rm -f ${builddir}/connect.ok
+rm -f ${builddir}/disconnect.ok
+
+$OPENCONNECT --help|grep local-hostname
+if test $? != 0;then
+	echo "Openconnect doesn't support --local-hostname"
+	exit 77
+fi
+
+echo "Testing local backend with username-password... "
+
+launch_server -d 1 -f -c "${srcdir}/data/test-pass-script.config" & PID=$!
+wait_server $PID
+
+echo "Connecting to obtain cookie with wrong username... "
+( echo "tost" | $OPENCONNECT -q localhost:$PORT -u tost --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) &&
+	fail $PID "Received cookie when we shouldn't"
+
+rm -f ${builddir}/connect.ok
+rm -f ${builddir}/disconnect.ok
+rm -f ${builddir}/host-update.ok
+#test special characters
+
+echo "Connecting to obtain cookie... "
+( echo "!@#$%^&*()<>" | $OPENCONNECT -q localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 --cookieonly >/dev/null 2>&1 ) ||
+	fail $PID "Could not receive cookie from server"
+
+echo "Re-connecting to force script run... "
+echo "!@#$%^&*()<>" | timeout 7 $OPENCONNECT -q --local-hostname='mylocalname' localhost:$PORT -u "sp@c/al" --servercert=d66b507ae074d03b02eafca40d35f87dd81049d3 -s /bin/true #>/dev/null 2>&1
+
+kill $PID
+wait
+
+sleep 5
+
+if ! test -f ${builddir}/connect.ok;then
+	echo "Connect script was not run"
+	exit 1
+fi
+
+if ! test -f ${builddir}/host-update.ok;then
+	echo "Host-update script was not run"
+	exit 1
+fi
+
+if ! test -f ${builddir}/disconnect.ok;then
+	echo "Disconnect script was not run properly"
+	exit 1
+fi
+
+rm -f ${builddir}/connect.ok
+rm -f ${builddir}/disconnect.ok
+rm -f ${builddir}/host-update.ok
+rm -f $TMPFILE
+
+exit 0

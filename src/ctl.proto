@@ -1,0 +1,119 @@
+syntax = "proto2";
+
+import "ipc.proto";
+
+/* STATUS */
+message status_rep
+{
+	required bool status = 1;
+	required uint32 pid = 2;
+	required uint32 sec_mod_pid = 3;
+	required uint32 active_clients = 4;
+	required uint32 start_time = 5;
+	required uint32 stored_tls_sessions = 7;
+	required uint32 banned_ips = 8;
+	required uint32 secmod_client_entries = 9;
+
+	required uint64 session_timeouts = 10;
+	required uint64 session_idle_timeouts = 11;
+	required uint64 session_errors = 12;
+	required uint64 sessions_closed = 13;
+	required uint64 kbytes_in = 14;
+	required uint64 kbytes_out = 15;
+	required uint32 min_mtu = 16;
+	required uint32 max_mtu = 17;
+	required uint32 last_reset = 18;
+	required uint32 avg_auth_time = 19;
+	required uint32 avg_session_mins = 20;
+	required uint32 max_auth_time = 21;
+	required uint32 max_session_mins = 22;
+
+	required uint64 auth_failures = 23;
+	required uint64 total_sessions_closed = 24;
+	required uint64 total_auth_failures = 25;
+}
+
+message bool_msg
+{
+	required bool status = 1 [default = false];
+}
+
+message user_info_rep
+{
+	required sint32 id = 1;
+	required string username = 2;
+	optional string groupname = 3;
+	required string ip = 4;
+	optional string tun = 5;
+	optional string remote_ip = 6;
+	optional string local_ip = 7;
+	optional string remote_ip6 = 8;
+	optional string local_ip6 = 9;
+	required uint32 conn_time = 10;
+	optional string hostname = 11;
+	optional string user_agent = 12;
+	required uint32 status = 13; /* PS_ */
+	optional string tls_ciphersuite = 14;
+	optional string dtls_ciphersuite = 15;
+
+	optional uint32 rx_per_sec = 16;
+	optional uint32 tx_per_sec = 17;
+	repeated string dns = 18;
+	repeated string nbns = 19;
+	repeated string routes = 20;
+	repeated string iroutes = 21;
+	optional uint32 mtu = 22;
+
+	optional string cstp_compr = 23;
+	optional string dtls_compr = 24;
+	repeated string no_routes = 25;
+	optional string local_dev_ip = 26;
+	repeated string domains = 27; /* split-dns domains */
+	required uint32 dpd = 28;
+	required uint32 keepalive = 29;
+	required bool restrict_to_routes = 30;
+	repeated fw_port_st fw_ports = 31;
+
+	required bytes safe_id = 32; /* a value derived from the cookie */
+}
+
+message user_list_rep
+{
+	repeated user_info_rep user = 1;
+}
+
+message top_update_rep
+{
+	required uint32 connected = 1;
+	optional uint32 discon_reason = 2;
+	optional string discon_reason_txt = 3;
+	required user_list_rep user = 4;
+}
+
+message username_req
+{
+	required string username = 1;
+}
+
+message id_req
+{
+	required sint32 id = 1;
+}
+
+message ban_info_rep
+{
+	required bytes ip = 1;
+	required uint32 score = 2;
+	optional uint32 expires = 3;
+}
+
+message ban_list_rep
+{
+	repeated ban_info_rep info = 1;
+}
+
+message unban_req
+{
+	required bytes ip = 1;
+}
+
