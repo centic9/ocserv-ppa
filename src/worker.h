@@ -36,6 +36,7 @@
 #include <stdbool.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include "vhost.h"
 
 typedef enum {
 	UP_DISABLED,
@@ -56,6 +57,7 @@ enum {
 	HEADER_DEVICE_TYPE,
 	HEADER_PLATFORM,
 	HEADER_DTLS_CIPHERSUITE,
+	HEADER_DTLS12_CIPHERSUITE,
 	HEADER_CONNECTION,
 	HEADER_FULL_IPV6,
 	HEADER_USER_AGENT,
@@ -99,12 +101,12 @@ typedef struct compression_method_st {
 typedef struct dtls_ciphersuite_st {
 	const char* oc_name;
 	const char* gnutls_name; /* the gnutls priority string to set */
+	unsigned dtls12_mode;
 	unsigned server_prio; /* the highest the more we want to negotiate that */
 	unsigned gnutls_cipher;
 	unsigned gnutls_kx;
 	unsigned gnutls_mac;
 	unsigned gnutls_version;
-	const char *txt_version;
 } dtls_ciphersuite_st;
 
 #ifdef HAVE_GSSAPI
@@ -157,18 +159,11 @@ typedef struct dtls_transport_ptr {
 	int consumed;
 } dtls_transport_ptr;
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
-# define gsocklen int
-#else
-# define gsocklen socklen_t
-#endif
-
 /* Given a base MTU, this macro provides the DTLS plaintext data we can send;
  * the output value does not include the DTLS header */
 #define DATA_MTU(ws,mtu) (mtu-ws->dtls_crypto_overhead-ws->dtls_proto_overhead)
 
 typedef struct worker_st {
-	struct tls_st *creds;
 	gnutls_session_t session;
 	gnutls_session_t dtls_session;
 
@@ -187,8 +182,14 @@ typedef struct worker_st {
 	sock_type_t conn_type; /* AF_UNIX or something else */
 	
 	http_parser *parser;
-	struct cfg_st *config;
-	struct perm_cfg_st *perm_config;
+
+	struct list_head *vconfig;
+
+	/* pointer inside vconfig */
+#define WSCREDS(ws) (&ws->vhost->creds)
+#define WSCONFIG(ws) (ws->vhost->perm_config.config)
+#define WSPCONFIG(ws) (&ws->vhost->perm_config)
+	struct vhost_cfg_st *vhost;
 
 	unsigned int auth_state; /* S_AUTH */
 
@@ -196,7 +197,7 @@ typedef struct worker_st {
 	socklen_t secmod_addr_len;
 
 	struct sockaddr_storage our_addr;	/* our address */
-	gsocklen our_addr_len;
+	socklen_t our_addr_len;
 	struct sockaddr_storage remote_addr;	/* peer's address */
 	socklen_t remote_addr_len;
 	char remote_ip_str[MAX_IP_STR];
@@ -359,7 +360,7 @@ void exit_worker(worker_st * ws);
 void exit_worker_reason(worker_st * ws, unsigned reason);
 
 int ws_switch_auth_to(struct worker_st *ws, unsigned auth);
-void ws_disable_auth(struct worker_st *ws, unsigned auth);
+int ws_switch_auth_to_next(struct worker_st *ws);
 void ws_add_score_to_ip(worker_st *ws, unsigned points, unsigned final);
 
 int connect_to_secmod(worker_st * ws);

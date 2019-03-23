@@ -103,7 +103,7 @@ unsigned i;
 				co_resume();
 				pctx->state = PAM_S_INIT;
 
-				if (pctx->password)
+				if (pctx->password[0] != 0)
 					pctx->replies[i].resp = strdup(pctx->password);
 				pctx->sent_msg = 0;
 				break;
@@ -154,7 +154,7 @@ int pret;
 	}
 }
 
-static int pam_auth_init(void** ctx, void *pool, const common_auth_init_st *info)
+static int pam_auth_init(void** ctx, void *pool, void *vctx, const common_auth_init_st *info)
 {
 int pret;
 struct pam_ctx_st * pctx;

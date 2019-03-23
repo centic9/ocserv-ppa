@@ -48,6 +48,7 @@
 /* Puts the provided PIN into the config's cgroup */
 void put_into_cgroup(main_server_st * s, const char *_cgroup, pid_t pid)
 {
+#ifdef __linux__
 	char *name, *p, *savep;
 	char cgroup[128];
 	char file[_POSIX_PATH_MAX];
@@ -56,7 +57,6 @@ void put_into_cgroup(main_server_st * s, const char *_cgroup, pid_t pid)
 	if (_cgroup == NULL)
 		return;
 
-#ifdef __linux__
 	/* format: cpu,memory:cgroup-name */
 	strlcpy(cgroup, _cgroup, sizeof(cgroup));
 
@@ -93,8 +93,9 @@ void put_into_cgroup(main_server_st * s, const char *_cgroup, pid_t pid)
 
 	return;
 #else
-	mslog(s, NULL, LOG_DEBUG,
-	      "Ignoring cgroup option as it is not supported on this system");
+	if (_cgroup != NULL)
+		mslog(s, NULL, LOG_WARNING,
+		      "Ignoring cgroup option as it is not supported on this system");
 #endif
 }
 
@@ -193,8 +194,7 @@ struct proc_st *old_proc;
 	/* check for a user with the same sid as in the cookie */
 	old_proc = proc_search_sid(s, req->cookie.data);
 	if (old_proc != NULL) {
-		mslog(s, old_proc, LOG_DEBUG, "disconnecting previous user session (%u) due to session re-use",
-			(unsigned)old_proc->pid);
+		mslog(s, old_proc, LOG_INFO, "disconnecting previous user session due to session re-use");
 
 		if (strcmp(proc->username, old_proc->username) != 0) {
 			mslog(s, old_proc, LOG_ERR, "the user of the new session doesn't match the old (new: %s)",
@@ -207,7 +207,7 @@ struct proc_st *old_proc;
 
 		if (old_proc->pid > 0)
 			kill(old_proc->pid, SIGTERM);
-		mslog(s, proc, LOG_INFO, "re-using session");
+		mslog(s, proc, LOG_DEBUG, "re-using session");
 	} else {
 		mslog(s, proc, LOG_INFO, "new user session");
 	}

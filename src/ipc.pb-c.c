@@ -1754,7 +1754,7 @@ const ProtobufCMessageDescriptor auth_cookie_reply_msg__descriptor =
   (ProtobufCMessageInit) auth_cookie_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptors[2] =
+static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptors[3] =
 {
   {
     "session_id",
@@ -1780,15 +1780,28 @@ static const ProtobufCFieldDescriptor session_resume_fetch_msg__field_descriptor
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SessionResumeFetchMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_resume_fetch_msg__field_indices_by_name[] = {
   1,   /* field[1] = cli_addr */
   0,   /* field[0] = session_id */
+  2,   /* field[2] = vhost */
 };
 static const ProtobufCIntRange session_resume_fetch_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 2 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor session_resume_fetch_msg__descriptor =
 {
@@ -1798,14 +1811,14 @@ const ProtobufCMessageDescriptor session_resume_fetch_msg__descriptor =
   "SessionResumeFetchMsg",
   "",
   sizeof(SessionResumeFetchMsg),
-  2,
+  3,
   session_resume_fetch_msg__field_descriptors,
   session_resume_fetch_msg__field_indices_by_name,
   1,  session_resume_fetch_msg__number_ranges,
   (ProtobufCMessageInit) session_resume_fetch_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descriptors[3] =
+static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descriptors[4] =
 {
   {
     "session_id",
@@ -1843,16 +1856,29 @@ static const ProtobufCFieldDescriptor session_resume_store_req_msg__field_descri
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SessionResumeStoreReqMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned session_resume_store_req_msg__field_indices_by_name[] = {
   2,   /* field[2] = cli_addr */
   1,   /* field[1] = session_data */
   0,   /* field[0] = session_id */
+  3,   /* field[3] = vhost */
 };
 static const ProtobufCIntRange session_resume_store_req_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor =
 {
@@ -1862,7 +1888,7 @@ const ProtobufCMessageDescriptor session_resume_store_req_msg__descriptor =
   "SessionResumeStoreReqMsg",
   "",
   sizeof(SessionResumeStoreReqMsg),
-  3,
+  4,
   session_resume_store_req_msg__field_descriptors,
   session_resume_store_req_msg__field_indices_by_name,
   1,  session_resume_store_req_msg__number_ranges,
@@ -2426,7 +2452,7 @@ const ProtobufCMessageDescriptor ban_ip_reply_msg__descriptor =
 };
 static const protobuf_c_boolean sec_auth_init_msg__tls_auth_ok__default_value = 0;
 static const uint32_t sec_auth_init_msg__auth_type__default_value = 0u;
-static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[9] =
+static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[10] =
 {
   {
     "tls_auth_ok",
@@ -2536,6 +2562,18 @@ static const ProtobufCFieldDescriptor sec_auth_init_msg__field_descriptors[9] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    12,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecAuthInitMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned sec_auth_init_msg__field_indices_by_name[] = {
   6,   /* field[6] = auth_type */
@@ -2547,12 +2585,13 @@ static const unsigned sec_auth_init_msg__field_indices_by_name[] = {
   0,   /* field[0] = tls_auth_ok */
   8,   /* field[8] = user_agent */
   1,   /* field[1] = user_name */
+  9,   /* field[9] = vhost */
 };
 static const ProtobufCIntRange sec_auth_init_msg__number_ranges[2 + 1] =
 {
   { 2, 0 },
   { 8, 5 },
-  { 0, 9 }
+  { 0, 10 }
 };
 const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
 {
@@ -2562,7 +2601,7 @@ const ProtobufCMessageDescriptor sec_auth_init_msg__descriptor =
   "SecAuthInitMsg",
   "",
   sizeof(SecAuthInitMsg),
-  9,
+  10,
   sec_auth_init_msg__field_descriptors,
   sec_auth_init_msg__field_indices_by_name,
   2,  sec_auth_init_msg__number_ranges,
@@ -2738,7 +2777,7 @@ const ProtobufCMessageDescriptor sec_auth_reply_msg__descriptor =
   (ProtobufCMessageInit) sec_auth_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[3] =
+static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[4] =
 {
   {
     "key_idx",
@@ -2776,16 +2815,29 @@ static const ProtobufCFieldDescriptor sec_op_msg__field_descriptors[3] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecOpMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned sec_op_msg__field_indices_by_name[] = {
   1,   /* field[1] = data */
   0,   /* field[0] = key_idx */
   2,   /* field[2] = sig */
+  3,   /* field[3] = vhost */
 };
 static const ProtobufCIntRange sec_op_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor sec_op_msg__descriptor =
 {
@@ -2795,14 +2847,14 @@ const ProtobufCMessageDescriptor sec_op_msg__descriptor =
   "SecOpMsg",
   "",
   sizeof(SecOpMsg),
-  3,
+  4,
   sec_op_msg__field_descriptors,
   sec_op_msg__field_indices_by_name,
   1,  sec_op_msg__number_ranges,
   (ProtobufCMessageInit) sec_op_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor sec_get_pk_msg__field_descriptors[2] =
+static const ProtobufCFieldDescriptor sec_get_pk_msg__field_descriptors[4] =
 {
   {
     "key_idx",
@@ -2828,15 +2880,41 @@ static const ProtobufCFieldDescriptor sec_get_pk_msg__field_descriptors[2] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecGetPkMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "bits",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(SecGetPkMsg, has_bits),
+    offsetof(SecGetPkMsg, bits),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned sec_get_pk_msg__field_indices_by_name[] = {
+  3,   /* field[3] = bits */
   0,   /* field[0] = key_idx */
   1,   /* field[1] = pk */
+  2,   /* field[2] = vhost */
 };
 static const ProtobufCIntRange sec_get_pk_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 2 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor sec_get_pk_msg__descriptor =
 {
@@ -2846,7 +2924,7 @@ const ProtobufCMessageDescriptor sec_get_pk_msg__descriptor =
   "SecGetPkMsg",
   "",
   sizeof(SecGetPkMsg),
-  2,
+  4,
   sec_get_pk_msg__field_descriptors,
   sec_get_pk_msg__field_indices_by_name,
   1,  sec_get_pk_msg__number_ranges,
@@ -3112,7 +3190,7 @@ const ProtobufCMessageDescriptor secm_stats_msg__descriptor =
   (ProtobufCMessageInit) secm_stats_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[8] =
+static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[9] =
 {
   {
     "reply",
@@ -3210,6 +3288,18 @@ static const ProtobufCFieldDescriptor secm_session_reply_msg__field_descriptors[
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "vhost",
+    11,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(SecmSessionReplyMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned secm_session_reply_msg__field_indices_by_name[] = {
   1,   /* field[1] = config */
@@ -3220,13 +3310,14 @@ static const unsigned secm_session_reply_msg__field_indices_by_name[] = {
   6,   /* field[6] = sid */
   7,   /* field[7] = tls_auth_ok */
   2,   /* field[2] = username */
+  8,   /* field[8] = vhost */
 };
 static const ProtobufCIntRange secm_session_reply_msg__number_ranges[3 + 1] =
 {
   { 1, 0 },
   { 6, 4 },
   { 8, 5 },
-  { 0, 8 }
+  { 0, 9 }
 };
 const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
 {
@@ -3236,14 +3327,14 @@ const ProtobufCMessageDescriptor secm_session_reply_msg__descriptor =
   "SecmSessionReplyMsg",
   "",
   sizeof(SecmSessionReplyMsg),
-  8,
+  9,
   secm_session_reply_msg__field_descriptors,
   secm_session_reply_msg__field_indices_by_name,
   3,  secm_session_reply_msg__number_ranges,
   (ProtobufCMessageInit) secm_session_reply_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
+static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[12] =
 {
   {
     "safe_id",
@@ -3282,12 +3373,12 @@ static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "last_modified",
+    "created",
     4,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_UINT32,
     0,   /* quantifier_offset */
-    offsetof(CookieIntMsg, last_modified),
+    offsetof(CookieIntMsg, created),
     NULL,
     NULL,
     0,             /* flags */
@@ -3342,6 +3433,18 @@ static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
+    "expires",
+    9,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, expires),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
     "status",
     10,
     PROTOBUF_C_LABEL_REQUIRED,
@@ -3353,23 +3456,49 @@ static const ProtobufCFieldDescriptor cookie_int_msg__field_descriptors[9] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "in_use",
+    11,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, in_use),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "vhost",
+    12,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(CookieIntMsg, vhost),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned cookie_int_msg__field_indices_by_name[] = {
+  3,   /* field[3] = created */
+  8,   /* field[8] = expires */
   5,   /* field[5] = groupname */
-  3,   /* field[3] = last_modified */
+  10,   /* field[10] = in_use */
   7,   /* field[7] = remote_ip */
   0,   /* field[0] = safe_id */
   1,   /* field[1] = session_is_open */
-  8,   /* field[8] = status */
+  9,   /* field[9] = status */
   2,   /* field[2] = tls_auth_ok */
   6,   /* field[6] = user_agent */
   4,   /* field[4] = username */
+  11,   /* field[11] = vhost */
 };
-static const ProtobufCIntRange cookie_int_msg__number_ranges[2 + 1] =
+static const ProtobufCIntRange cookie_int_msg__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 10, 8 },
-  { 0, 9 }
+  { 0, 12 }
 };
 const ProtobufCMessageDescriptor cookie_int_msg__descriptor =
 {
@@ -3379,10 +3508,10 @@ const ProtobufCMessageDescriptor cookie_int_msg__descriptor =
   "CookieIntMsg",
   "",
   sizeof(CookieIntMsg),
-  9,
+  12,
   cookie_int_msg__field_descriptors,
   cookie_int_msg__field_indices_by_name,
-  2,  cookie_int_msg__number_ranges,
+  1,  cookie_int_msg__number_ranges,
   (ProtobufCMessageInit) cookie_int_msg__init,
   NULL,NULL,NULL    /* reserved[123] */
 };

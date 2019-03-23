@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014-2017 Red Hat
+ * Copyright (C) 2014-2018 Nikos Mavrogiannopoulos
  *
  * Author: Nikos Mavrogiannopoulos
  *
@@ -51,12 +52,14 @@
 
 /* In JSON output include fields which were no longer available after 0.11.7
  */
-#define OCSERV_0_11_6_COMPAT 1
+#undef OCSERV_0_11_6_COMPAT
 
 static
 int common_info_cmd(UserListRep *args, FILE *out, cmd_params_st *params);
 static
-int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *params, unsigned all);
+int session_info_cmd(void *ctx, SecmListCookiesReplyMsg * args, FILE *out,
+		    cmd_params_st *params,
+		    const char *lsid, unsigned all);
 
 struct unix_ctx {
 	int fd;
@@ -584,7 +587,7 @@ static const char *get_ip(const char *ip1, const char *ip2)
 void common_user_list(struct unix_ctx *ctx, UserListRep *rep, FILE *out, cmd_params_st *params)
 {
 	unsigned i;
-	const char *vpn_ip, *groupname, *username;
+	const char *vpn_ip, *username;
 	const char *dtls_ciphersuite;
 	char tmpbuf[MAX_TMPSTR_SIZE];
 	time_t t;
@@ -603,7 +606,7 @@ void common_user_list(struct unix_ctx *ctx, UserListRep *rep, FILE *out, cmd_par
 		/* add header */
 		if (i == 0) {
 			fprintf(out, "%8s %8s %8s %14s %14s %6s %7s %14s %9s\n",
-				"id", "user", "group", "ip", "vpn-ip", "device",
+				"id", "user", "vhost", "ip", "vpn-ip", "device",
 				"since", "dtls-cipher", "status");
 		}
 
@@ -611,14 +614,10 @@ void common_user_list(struct unix_ctx *ctx, UserListRep *rep, FILE *out, cmd_par
 		tm = localtime(&t);
 		strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
 
-		groupname = rep->user[i]->groupname;
-		if (groupname == NULL || groupname[0] == 0)
-			groupname = NO_GROUP;
-
 		print_time_ival7(tmpbuf, time(0), t);
 
 		fprintf(out, "%8d %8s %8s %14s %14s %6s ",
-			(int)rep->user[i]->id, username, groupname, rep->user[i]->ip, vpn_ip, rep->user[i]->tun);
+			(int)rep->user[i]->id, username, rep->user[i]->vhost, rep->user[i]->ip, vpn_ip, rep->user[i]->tun);
 
 		dtls_ciphersuite = fix_ciphersuite(rep->user[i]->dtls_ciphersuite);
 
@@ -670,12 +669,12 @@ int handle_list_users_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *
 	return ret;
 }
 
-static char *shorten(void *cookie, unsigned cookie_size, unsigned small)
+static char *shorten(void *cookie, unsigned session_id_size, unsigned small)
 {
 	static char psid[SAFE_ID_SIZE];
 
-	assert(cookie_size <= SAFE_ID_SIZE);
-	memcpy(psid, cookie, cookie_size);
+	assert(session_id_size <= SAFE_ID_SIZE);
+	memcpy(psid, cookie, session_id_size);
 
 	if (small)
 		psid[6] = 0;
@@ -686,18 +685,21 @@ static char *shorten(void *cookie, unsigned cookie_size, unsigned small)
 }
 
 static
-void cookie_list(struct unix_ctx *ctx, SecmListCookiesReplyMsg *rep, FILE *out, cmd_params_st *params,
+void session_list(struct unix_ctx *ctx, SecmListCookiesReplyMsg *rep, FILE *out, cmd_params_st *params,
 		 unsigned all)
 {
 	unsigned i;
-	const char *groupname, *username;
+	const char *username;
 	char tmpbuf[MAX_TMPSTR_SIZE];
 	time_t t;
 	struct tm *tm;
 	char str_since[65];
+	const char *sid;
+
+	session_entries_clear();
 
 	if (HAVE_JSON(params)) {
-		cookie_info_cmd(rep, out, params, all);
+		session_info_cmd(ctx, rep, out, params, NULL, all);
 	} else for (i=0;i<rep->n_cookies;i++) {
 		if (!all && rep->cookies[i]->status != PS_AUTH_COMPLETED)
 			continue;
@@ -709,32 +711,27 @@ void cookie_list(struct unix_ctx *ctx, SecmListCookiesReplyMsg *rep, FILE *out, 
 		/* add header */
 		if (i == 0) {
 			fprintf(out, "%6s %8s %8s %14s %24s %8s %8s\n",
-				"session", "user", "group", "ip", "user agent", "updated", "status");
+				"session", "user", "vhost", "ip", "user agent", "created", "status");
 		}
 
-		t = rep->cookies[i]->last_modified;
+		t = rep->cookies[i]->created;
 		if (t > 0) {
 			tm = localtime(&t);
 			strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
 			print_time_ival7(tmpbuf, time(0), t);
-		} else {
-			strlcpy(tmpbuf, "(active)", sizeof(tmpbuf));
 		}
 
-		groupname = rep->cookies[i]->groupname;
-		if (groupname == NULL || groupname[0] == 0)
-			groupname = NO_GROUP;
-
+		sid = shorten(rep->cookies[i]->safe_id.data, rep->cookies[i]->safe_id.len, 1);
+		session_entries_add(ctx, sid);
 
 		fprintf(out, "%.6s %8s %8s %14s %.24s %8s %8s\n",
-			shorten(rep->cookies[i]->safe_id.data, rep->cookies[i]->safe_id.len, 1),
-			username, groupname, rep->cookies[i]->remote_ip,
+			sid, username, rep->cookies[i]->vhost, rep->cookies[i]->remote_ip,
 			rep->cookies[i]->user_agent, tmpbuf, ps_status_to_str(rep->cookies[i]->status, 1));
 	}
 }
 
 static
-int handle_list_cookies_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params, unsigned all)
+int handle_list_sessions_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params, unsigned all)
 {
 	int ret;
 	struct cmd_reply_st raw;
@@ -757,7 +754,7 @@ int handle_list_cookies_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st
 	if (rep == NULL)
 		goto error;
 
-	cookie_list(ctx, rep, out, params, all);
+	session_list(ctx, rep, out, params, all);
 
 	ret = 0;
 	goto cleanup;
@@ -776,14 +773,62 @@ int handle_list_cookies_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st
 	return ret;
 }
 
-int handle_list_valid_cookies_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
+int handle_show_session_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
 {
-	return handle_list_cookies_cmd(ctx, arg, params, 0);
+	int ret;
+	struct cmd_reply_st raw;
+	SecmListCookiesReplyMsg *rep = NULL;
+	FILE *out;
+	const char *sid = (void*)arg;
+	PROTOBUF_ALLOCATOR(pa, ctx);
+
+	if (arg == NULL || need_help(arg)) {
+		check_cmd_help(rl_line_buffer);
+		return 1;
+	}
+
+	init_reply(&raw);
+
+	entries_clear();
+
+	out = pager_start(params);
+
+	ret = send_cmd(ctx, CTL_CMD_LIST_COOKIES, NULL, NULL, NULL, &raw);
+	if (ret < 0) {
+		goto error;
+	}
+
+	rep = secm_list_cookies_reply_msg__unpack(&pa, raw.data_size, raw.data);
+	if (rep == NULL)
+		goto error;
+
+	session_info_cmd(ctx, rep, out, params, sid, 0);
+
+	ret = 0;
+	goto cleanup;
+
+ error:
+	ret = 1;
+	fprintf(stderr, ERR_SERVER_UNREACHABLE);
+
+ cleanup:
+	if (rep != NULL)
+		secm_list_cookies_reply_msg__free_unpacked(rep, &pa);
+
+	free_reply(&raw);
+	pager_stop(out);
+
+	return ret;
 }
 
-int handle_list_all_cookies_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
+int handle_list_valid_sessions_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
 {
-	return handle_list_cookies_cmd(ctx, arg, params, 1);
+	return handle_list_sessions_cmd(ctx, arg, params, 0);
+}
+
+int handle_list_all_sessions_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
+{
+	return handle_list_sessions_cmd(ctx, arg, params, 1);
 }
 
 int handle_list_iroutes_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
@@ -824,13 +869,13 @@ int handle_list_iroutes_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st
 
 			/* add header */
 			if (i == 0) {
-				fprintf(out, "%6s %8s %6s %16s %28s\n",
-					"id", "user", "device", "vpn-ip", "iroute");
+				fprintf(out, "%6s %8s %8s %6s %16s %28s\n",
+					"id", "user", "vhost", "device", "vpn-ip", "iroute");
 			}
 
 			for (j=0;j<rep->user[i]->n_iroutes;j++)
-				fprintf(out, "%6d %8s %6s %16s %28s\n",
-					(int)rep->user[i]->id, username, rep->user[i]->tun, vpn_ip, rep->user[i]->iroutes[j]);
+				fprintf(out, "%6d %8s %8s %6s %16s %28s\n",
+					(int)rep->user[i]->id, username, rep->user[i]->vhost, rep->user[i]->tun, vpn_ip, rep->user[i]->iroutes[j]);
 
 		}
 	} else {
@@ -846,6 +891,7 @@ int handle_list_iroutes_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st
 
 			print_single_value_int(out, params, "ID", rep->user[i]->id, 1);
 			print_single_value(out, params, "Username", username, 1);
+			print_single_value(out, params, "vhost", rep->user[i]->vhost, 1);
 			print_single_value(out, params, "Device", rep->user[i]->tun, 1);
 			print_single_value(out, params, "IP", vpn_ip, 1);
 			print_list_entries(out, params, "iRoutes", rep->user[i]->iroutes, rep->user[i]->n_iroutes, 1);
@@ -1046,6 +1092,7 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 		print_pair_value(out, params, "Username", username, "Groupname", groupname, 1);
 
 		print_single_value(out, params, "State", ps_status_to_str(args->user[i]->status, 0), 1);
+		print_single_value(out, params, "vhost", args->user[i]->vhost, 1);
 		if (args->user[i]->has_mtu != 0)
 			print_pair_value(out, params, "Device", args->user[i]->tun, "MTU", int2str(tmpbuf, args->user[i]->mtu), 1);
 		else
@@ -1161,17 +1208,24 @@ int common_info_cmd(UserListRep * args, FILE *out, cmd_params_st *params)
 }
 
 static
-int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *params, unsigned all)
+int session_info_cmd(void *ctx, SecmListCookiesReplyMsg * args, FILE *out,
+		    cmd_params_st *params, const char *lsid, unsigned all)
 {
-	char *username = "";
-	char *groupname = "";
+	const char *username, *groupname;
 	char str_since[65];
+	char str_since2[65];
 	struct tm *tm;
 	time_t t;
 	unsigned at_least_one = 0;
 	int ret = 1;
 	unsigned i;
+	const char *sid;
 	unsigned init_pager = 0;
+	unsigned int match_len = 0;
+	char tmpbuf[MAX_TMPSTR_SIZE];
+
+	if (lsid)
+		match_len = strlen(lsid);
 
 	if (out == NULL) {
 		out = pager_start(params);
@@ -1181,8 +1235,16 @@ int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *pa
 	if (HAVE_JSON(params))
 		fprintf(out, "[\n");
 
+	session_entries_clear();
+
 	for (i=0;i<args->n_cookies;i++) {
-		if (!all && args->cookies[i]->status != PS_AUTH_COMPLETED)
+		if (!all && args->cookies[i]->status != PS_AUTH_COMPLETED && lsid == NULL)
+			continue;
+
+		sid = shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 1);
+		session_entries_add(ctx, sid);
+
+		if (lsid && strncmp(sid, lsid, match_len) != 0)
 			continue;
 
 		if (at_least_one > 0)
@@ -1190,18 +1252,31 @@ int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *pa
 
 		print_start_block(out, params);
 
-		print_single_value_int(out, params, "session_is_open", args->cookies[i]->session_is_open, 1);
-		print_single_value_int(out, params, "tls_auth_ok", args->cookies[i]->tls_auth_ok, 1);
-		print_single_value(out, params, "State", ps_status_to_str(args->cookies[i]->status, 1), 1);
-		t = args->cookies[i]->last_modified;
+		print_single_value(out, params, "Session", sid, 1);
+		if (HAVE_JSON(params))
+			print_single_value(out, params, "Full session", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
+		else
+			print_single_value(out, params, "Full session ID", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
+
+		t = args->cookies[i]->created;
+
+		str_since[0] = 0;
+		str_since2[0] = 0;
 
 		if (t > 0) {
 			tm = localtime(&t);
 			strftime(str_since, sizeof(str_since), DATE_TIME_FMT, tm);
-		} else {
-			strlcpy(str_since, "(active)", sizeof(str_since));
 		}
-		print_single_value(out, params, "Last Modified", str_since, 1);
+
+		t = args->cookies[i]->expires;
+
+		if (t > 0) {
+			tm = localtime(&t);
+			strftime(str_since2, sizeof(str_since2), DATE_TIME_FMT, tm);
+		}
+		print_pair_value(out, params, "Created", str_since, "Expires", str_since2, 1);
+
+		print_single_value(out, params, "State", ps_status_to_str(args->cookies[i]->status, 1), 1);
 
 		username = args->cookies[i]->username;
 		if (username == NULL || username[0] == 0)
@@ -1212,20 +1287,29 @@ int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *pa
 			groupname = NO_GROUP;
 
 		print_pair_value(out, params, "Username", username, "Groupname", groupname, 1);
-		print_single_value(out, params, "User-Agent", args->cookies[i]->user_agent, 1);
-		print_single_value(out, params, "Remote IP", args->cookies[i]->remote_ip, 1);
+		print_pair_value(out, params, "vhost", args->cookies[i]->vhost, "User-Agent", args->cookies[i]->user_agent, 1);
+		print_pair_value(out, params, "Remote IP", args->cookies[i]->remote_ip, "Location", geo_lookup(args->cookies[i]->remote_ip, tmpbuf, sizeof(tmpbuf)), 1);
 
-		print_single_value(out, params, "Last Modified", str_since, 1);
+		if (HAVE_JSON(params)) {
+			/* old names for compatibility */
+			print_single_value_int(out, params, "session_is_open", args->cookies[i]->session_is_open, 1);
+			print_single_value_int(out, params, "tls_auth_ok", args->cookies[i]->tls_auth_ok, 1);
+			print_single_value_int(out, params, "in_use", args->cookies[i]->in_use, 1);
+		} else {
+			/* old names for compatibility */
+			print_pair_value(out, params, "In use", args->cookies[i]->in_use?"True":"False", 
+					 "Activated", args->cookies[i]->session_is_open?"True":"False", 1);
+			print_single_value(out, params, "Certificate auth", args->cookies[i]->tls_auth_ok?"True":"False", 1);
+		}
 
 #ifdef OCSERV_0_11_6_COMPAT
 		if (HAVE_JSON(params)) {
 			/* compat with previous versions */
+			print_single_value(out, params, "Last Modified", str_since, 1);
 			print_single_value(out, params, "Raw cookie", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
 			print_single_value(out, params, "Cookie", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 1), 1);
 		}
 #endif
-		print_single_value(out, params, "Full session", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 0), 1);
-		print_single_value(out, params, "Session", shorten(args->cookies[i]->safe_id.data, args->cookies[i]->safe_id.len, 1), 1);
 
 		print_end_block(out, params, i<(args->n_cookies-1)?1:0);
 
@@ -1241,7 +1325,7 @@ int cookie_info_cmd(SecmListCookiesReplyMsg * args, FILE *out, cmd_params_st *pa
  cleanup:
 	if (at_least_one == 0) {
 		if (NO_JSON(params))
-			fprintf(out, "user or ID not found\n");
+			fprintf(out, "Session ID not found or expired\n");
 		ret = 2;
 	}
 	if (init_pager)
@@ -1305,7 +1389,7 @@ static void dummy_sighandler(int signo)
 
 int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *params)
 {
-	uint8_t header[3];
+	uint8_t header[5];
 	int ret;
 	struct cmd_reply_st raw;
 	UserListRep *rep1 = NULL;
@@ -1377,6 +1461,7 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 		if (!FD_ISSET(ctx->fd, &rfds))
 			continue;
 
+		assert(sizeof(header) == 1+sizeof(slength));
 		ret = force_read_timeout(ctx->fd, header, 1+sizeof(slength), DEFAULT_TIMEOUT);
 		if (ret == -1) {
 			int e = errno;
@@ -1430,7 +1515,8 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 			common_info_cmd(rep2->user, stdout, params);
 		} else {
 			if (rep2->connected) {
-				printf("connected user '%s' (%u) from %s with IP %s\n",
+				printf("%s: connected user '%s' (%u) from %s with IP %s\n",
+					rep2->user->user[0]->vhost,
 					rep2->user->user[0]->username,
 					rep2->user->user[0]->id,
 					rep2->user->user[0]->ip,
@@ -1440,7 +1526,8 @@ int handle_events_cmd(struct unix_ctx *ctx, const char *arg, cmd_params_st *para
 				entries_add(ctx, rep2->user->user[0]->username, strlen(rep2->user->user[0]->username), rep2->user->user[0]->id);
 			} else {
 				print_time_ival7(tmpbuf, time(0), rep2->user->user[0]->conn_time);
-				printf("disconnect user '%s' (%u) from %s with IP %s (reason: %s, time: %s)\n",
+				printf("%s: disconnect user '%s' (%u) from %s with IP %s (reason: %s, time: %s)\n",
+					rep2->user->user[0]->vhost,
 					rep2->user->user[0]->username,
 					rep2->user->user[0]->id,
 					rep2->user->user[0]->ip,

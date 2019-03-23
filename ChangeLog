@@ -1,3 +1,1018 @@
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: corrected typo Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.12.2 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am: Makefile: allow out-of-tree builds with bundled
+	protobuf Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit a67c45099ff9de96f5eed418477806d1189d27ee Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Thu Jan 10 19:30:36 2019
+	+0100
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: worker-http: use the same workaround string for
+	all ciphersuites Resolves #193 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 232de85d171a411ceee680f40966c3a076978401 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Wed Jan 9 19:03:04 2019
+	+0100
+
+2019-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-vpn.c: setup_dtls0_9_keys: renamed and updated log
+	messages for clarity Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c, src/worker.h: worker-http: dropped txt_version All the versions checked were prior to the minimum gnutls version we
+	require.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/http-heads.gperf, src/worker-http.c, src/worker-vpn.c,
+	src/worker.h: worker-http: added support for anyconnect DTLS1.2
+	ciphersuites This adds support for DTLS1.2 ciphersuite header as sent by
+	anyconnect clients.  Resolves #188 Resolves #193 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: updated instructions on debian Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: skip Centos6 tests that fail Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: cfg_ini_handler: notify static analyzers that
+	defvhost is always non-null Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2019-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am: tests: moved server-cert-rsa-pss to
+	dist_check_scripts The gnutls included in distributions is expected to work well with
+	RSA-PSS.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 34b39d213cb48f6d4688ac71712f5e676a976b84 Author:
+	pumpkin031 <www.carrotsoft@gmail.com> Date:   Sun Nov 18 12:54:18
+	2018 +0900
+
+2018-11-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit d4a4e780fcd9f95fc1044453b7039f950fba93f2 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sun Nov 4 11:38:49 2018
+	+0100
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-auth.c: sec-mod: log sucessful authentication Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/common.sh,
+	tests/data/config-per-group.config, tests/data/group-config/tost,
+	tests/test-config-per-group: tests: added functionality test for
+	config-per-group Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-11-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 39c6d578b54fd1b46f2f9515b9d0a9e16481b14c Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sat Sep 22 21:35:55 2018
+	+0200
+
+2018-09-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-pam, tests/test-pam-noauth, tests/test-pass: tests:
+	added check with empty password Relates #171 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-21  Timo Förster <tfoerster@webfoersterei.de>
+
+	* doc/sample.config: Change documentation url for UsersFile. Fixes
+	#163 Signed-off-by: Timo FÃ¶rster <tfoerster@webfoersterei.de>
+
+2018-07-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: disabled asan job as it conflicts
+	with cwrap tools in F28 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 4f79db43b67eda84ebd6d535dbe0bbde94734f1e Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Fri Jul 20 22:15:42 2018
+	+0200
+
+2018-07-20  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/aes128-cipher, tests/aes128-gcm-cipher,
+	tests/aes256-cipher, tests/aes256-gcm-cipher,
+	tests/cipher-common.sh: tests: added unit tests for AES-128-GCM and
+	AES-256-GCM Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-07-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac, src/worker-http.c, tests/Makefile.am,
+	tests/aes128-cipher, tests/aes256-cipher,
+	tests/data/test-ciphers.config, tests/ns.sh: Added support for
+	AES-256-CBC This enables support for AES-256 for anyconnect clients which do not
+	support AES-GCM. Also prioritized the 256-bit ciphers higher than
+	the 128-bit ones.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: updated for new debian build name Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: updated for new project Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/ocserv.8.md: ocserv.8: link to openconnect(8) Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-06-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker-vpn: more reasonable messages for timeout
+	and disconnections Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-05-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/radius.c: radius: be more verbose with groups found Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/README-radius.md: README-radius.md: mention groupconfig=true
+	relevance for Class attribute [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: NEWS: updated for release Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am: added missing file Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: released 0.12.1 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit c1aee4fe9a5c4df02d8a8327ff61c224ba277d6f Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Fri May 11 22:10:17 2018
+	+0200
+
+2018-05-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, configure.ac: configure: always work-around
+	brokenness of gnutls_certificate_set_key That is, instead of requiring the user to explicitly pass
+	--with-broken-gnutls warn at the end of the configure script.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 807ce345de41b2969ba76ef31812cc9beded7249 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Thu May 10 19:38:50 2018
+	+0200
+
+2018-05-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/main.c, src/vpn.h: ocserv: added the --no-chdir
+	command line option This allows running on the background but without changing the
+	current directory.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-05-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 094145bf541d520cd372034b7c287b5199f7c23d Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Mon Apr 30 17:40:36 2018
+	+0200
+
+2018-04-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/Makefile.am: doc: fail safe when ronn is not available Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/Makefile.am: doc: corrected typo in manpage generation Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/Makefile.am: doc: dist_man_MANS are defined unconditionally Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-04-23  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* tests/Makefile.am: tests: ship missing test [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-04-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/Makefile.am: doc: added missing file Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: bumped version Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit a4525385bbea7275475e1a73985664733ca6885a Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sun Apr 15 20:53:17 2018
+	+0200
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitignore: .gitignore: ignore new tests Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/data/{test-compression.config =>
+	test-compression-lz4.config},
+	tests/data/test-compression-lzs.config, tests/{compression =>
+	lz4-compression}, tests/lzs-compression: tests: separated
+	compression tests to lzs and lz4 That allows testing both code paths separately.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/vpn.h, src/worker-http.c: config: added options
+	to change compression algorithm priorities Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config: sample.config: the example paths reflect real
+	system paths Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 03bccbcaefa0fef98e7dacb5e444409088e2436b Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sun Apr 15 09:13:54 2018
+	+0200
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.h: ms_sleep: do wait for the specified amount of
+	time That is, do not return earlier due to a signal.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/certs/crl.pem,
+	tests/data/test-sighup.config, tests/test-maintenance,
+	tests/test-sighup: tests: added test to unit test the maintenance
+	cycle This allows to catch issues like crashes late in the server
+	operation as in #149 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.c, src/main.h: main: allow forcing maintenance cycle with
+	SIGUSR2 This is done for testing purposes; allow test the maintenance cycle
+	without waiting for the necessary time.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-15  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main.c: main: corrected call of CRL reload Resolves #149 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/gssapi.c: gssapi auth: set the virtual host data early That prevents a crash on its use from get_name() later in the
+	initialization.  Resolves #145 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit b4bb6c2049609aad4a5c48bef6ec1e5f958aaf3a Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Sat Apr 14 18:24:04 2018
+	+0200
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md, tests/data/pam/ocserv.in, tests/test-pam: tests:
+	pam-test was restricted to pam_matrix valgrind and asan were indicating issues with pam_oath, so avoid
+	using it in the testsuite.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/main-sec-mod-cmd.c, src/main.c, src/sec-mod.c,
+	src/sec-mod.h, src/tlslib.c, src/vpn.h: sec-mod/main: eliminate mem
+	leaks related to vhost transition Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/port-parsing.c: tests: properly handle memory in
+	cfg_parse_ports() unit test Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/str.c: trim_trailing_whitespace: avoid invalid memory
+	access/read Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-worker-cmd.c: proxy protocol: added check to avoid memcpy
+	on zero data Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: corrected run of ubsan/asan Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: configure: do not warn on string truncation Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/radius.c: radius: allow more space in route from txt to
+	avoid truncation Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/pam.c: pam: corrected check for empty password Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod.c, src/tlslib.c, src/worker-http-handlers.c,
+	src/worker-vpn.c: tlslib: eliminated unneeded code for GnuTLS >=
+	3.3.0 We already require GnuTLS 3.3.0 or later.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/proc-search.c: proc_table_update_ip: corrected DTLS address
+	comparison Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am: tests: server-cert-rsa-pss moved to xfail set Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tlslib.c: tlslib: set public key algorithm with
+	gnutls_privkey_import_ext4 Previously we would require communication with sec-mod, which is not
+	setup during configuration time.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac, src/auth/plain.c, src/ocpasswd/ocpasswd.c: include
+	crypt.h to use crypt() This is necessary in Fedora28 as it doesn't provide crypt()
+	prototype in unistd.h https://bugzilla.redhat.com/show_bug.cgi?id=1566464 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-04-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/tlslib.c: tlslib: added missing struct element Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-04-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 158b099c9f0da83695d37b28ee78ff939588e96c Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Fri Apr 6 06:44:35 2018
+	+0200
+
+2018-04-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: update code coverage Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, configure.ac, tests/Makefile.am, tests/common.sh,
+	tests/data/test-haproxy-connect.config,
+	tests/data/test-traffic.config, tests/full-test, tests/ns.sh,
+	tests/traffic: tests: full-test was moved into traffic test The new traffic test only requires namespaces and no docker.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-05  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/haproxy-connect, tests/ns.sh: 
+	haproxy-connect: split into lib Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 86fe0fc4573a29ff1560ce17d6260338db8f56e2 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Mon Mar 26 18:02:28 2018
+	+0200
+
+2018-03-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, src/proc-search.c: proc_table_update_ip: do not update IP if
+	the previous IP is not found That adds a safety net in case there is a mismatch of IPs, to
+	prevent adding two entries in the hashtable for the same IP.  Resolves #146 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-04-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/proc-search.c: proc-search: indentation fixes Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md, tests/Makefile.am, tests/common.sh,
+	tests/data/haproxy-auth.cfg, tests/data/test-haproxy-auth.config,
+	tests/haproxy-auth: tests: added test with proxy-protocol That tests operation under haproxy with proxy-protocol without
+	docker.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-proxyproto.c: worker: properly handle the haproxy
+	health commands That is, do not close that connection, but follow up and accept it,
+	according to the protocol.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: NEWS: document only entries which are not available in
+	0.11.x branch Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 1aa3056849155bd419264c26d07558183b40b379 Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Wed Mar 21 12:52:54 2018
+	+0100
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: configure: warn when no worker isolation is
+	available Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tun.c: tun: better separation of OS dependent tun
+	functionality Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tun.c: combined bsd_open_tun with bsd_ifrename Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/tun.c: rename tun device on FreeBSD Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* : commit 1e88a224eeef4e0b0173f41f5a6b4e12a83ce3ec Author: Nikos
+	Mavrogiannopoulos <nmav@gnutls.org> Date:   Wed Mar 21 12:24:31 2018
+	+0100
+
+2018-03-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/data/multiple-routes.config,
+	tests/multiple-routes: tests: added reproducer for #141 This tests whether more than 128 options can be read in routes or
+	dns fields.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-12  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added ubsan build Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, Makefile.am, README.md, configure.ac: Create
+	coverage report and depend on pre-built CI images It will be made available at:
+	https://ocserv.gitlab.io/ocserv/coverage/ Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: config: allow empty device name on vhosts Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: config: corrected check for empty device name Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod.c: sec-mod: move variable in the ifdef block it is
+	used at Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/sec-mod.c, src/tlslib.c: tlslib: added support
+	for gnutls 3.6.3 (unreleased) That adds support for GNUTLS_PRIVKEY_INFO_PK_ALGO_BITS which is
+	necessary for RSA-PSS private keys.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: better presentation of badges [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .travis.yml, README.md: .travis.yml: removed; ocserv cannot be
+	built in ubuntu14.04 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-auth.c, src/worker.h: worker.h: removed socklen_t
+	non-presence work-around The socklen_t use is spread out in the code, making that work around
+	non-functional.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/icmp-ping.c, src/main-auth.c, src/main-user.c,
+	src/vpn.h, src/worker-http.c, src/worker-misc.c, src/worker-vpn.c: 
+	use casts to avoid various clang warnings under BSD systems Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config: updated URI Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, doc/ocserv.8.md, doc/sample.config: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, tests/Makefile.am, tests/common.sh,
+	tests/data/test-vhost-pass-cert.config,
+	tests/data/test-vhost2.passwd, tests/data/test-vhost3.passwd,
+	tests/data/vhost.hosts, tests/test-vhost: tests: introduced test
+	program to check basic vhost functionality This checks whether connecting to different virtual hosts with
+	different authentication methods works.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/Makefile.am, src/acct/pam.c,
+	src/acct/radius.c, src/auth/gssapi.c, src/auth/pam.c,
+	src/auth/plain.c, src/auth/radius.c, src/auth/radius.h,
+	src/common-config.h, src/common/common.c, src/common/common.h,
+	src/config.c, src/ctl.proto, src/icmp-ping.c, src/ip-lease.c,
+	src/ipc.proto, src/log.c, src/main-ban.c, src/main-ctl-unix.c,
+	src/main-proc.c, src/main-sec-mod-cmd.c, src/main-user.c,
+	src/main-worker-cmd.c, src/main.c, src/main.h, src/occtl/geoip.c,
+	src/occtl/unix.c, src/route-add.c, src/sec-mod-acct.h,
+	src/sec-mod-auth.c, src/sec-mod-auth.h, src/sec-mod-cookies.c,
+	src/sec-mod-db.c, src/sec-mod-resume.c, src/sec-mod-sup-config.c,
+	src/sec-mod.c, src/sec-mod.h, src/subconfig.c, src/tlslib.c,
+	src/tlslib.h, src/tun.c, src/vhost.h, src/vpn.h, src/worker-auth.c,
+	src/worker-http-handlers.c, src/worker-http.c, src/worker-kkdcp.c,
+	src/worker-misc.c, src/worker-privs.c, src/worker-resume.c,
+	src/worker-vpn.c, src/worker.h, tests/Makefile.am, tests/ban-ips.c,
+	tests/certs/server-cert-secp521r1.pem,
+	tests/certs/server-key-secp521r1.pem: Introduced the notion of
+	virtual hosts This provides virtualized server configurations which take effect
+	after client connection when client hello is received.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: disabled rawhide build The fedora image is broken since long time.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-02  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: config: properly warn on duplicate pid-file option Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-pass, tests/test-pass-opt-cert: tests: use the
+	--pid-file and -p options in ocserv This allows detecting issues like in #143 where these two options
+	regressed.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-03-01  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: ocserv: avoid crash when --pid-file is used Resolves #143 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-27  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: worker: only switch to GSSAPI authentication if
+	not already used certificate That allows using gssapi as primary and certificate as fallback.  Resolves #108 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-auth.c: worker: use explicit parenthesis for clarity Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/data/test-gssapi-opt-cert.config,
+	tests/data/test-gssapi-opt-pass.config, tests/test-gssapi-opt-cert,
+	tests/test-gssapi-opt-pass: tests: introduced tests with gssapi
+	falling back to pass or certs Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-auth.c, src/worker-http.c, src/worker.h: worker:
+	simplified fallback to next authentication method That, also allows falling back from certificate authentication
+	failure, allowing it being listed as primary, with alternatives
+	present.  Resolves #108 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c: config.c: clarify if clause Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/data/test-cert-opt-pass.config,
+	tests/test-cert-opt-pass: tests: added check cert or pass auth This is the similar to the test case (test-pass-opt-cert) of pass or
+	cert, but in that case the certificate method is set as primary.  Relates #108 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/data/test-pass-opt-cert.config,
+	tests/test-pass-opt-cert: test-pass-opt-cert: modified not to
+	require root access Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-otp, tests/test-otp-cert: tests: check whether ocserv
+	is build with oath support prior to running otp tests Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, tests/Makefile.am, tests/data/test-otp.config,
+	tests/docker-ocserv/Dockerfile-fedora-otp,
+	tests/docker-ocserv/Makefile.am,
+	tests/docker-ocserv/ocserv-otp.conf,
+	tests/docker-ocserv/users2.oath, tests/otp-test, tests/test-otp,
+	tests/test-otp-cert: test: replaced docker otp-test with cwrap
+	test-otp Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/Makefile.am, tests/common.sh,
+	tests/data/test-otp-cert.config, tests/data/test-otp.oath,
+	tests/data/test-otp.passwd, tests/test-otp-cert: tests: introduced
+	test with OTP-password and certificate auth Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-25  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/auth/plain.c: amend: plain: avoid crash on locked accounts The null pointer dereference fix broke plain OTP setup of ocserv.  Resolves #114, #137 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: unix: corrected header size when receiving
+	events Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-18  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: removed references to autogen Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2016-07-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c, src/main.h, src/proc-search.c, src/proc-search.h: Hash
+	the peer's DTLS IP separately from its CSTP IP This allows keeping track of clients which have their DTLS stream
+	come from a different IP location than their CSTP stream.  Relates ocserv/ocserv#61
+
+2018-02-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: rawhide: do not rely on tcp
+	wrappers They are no longer part of Fedora28.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-02-19  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* doc/sample.config: doc: clarify auth and enable-auth Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-02-11  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-misc.c: worker: mark new UDP fd received as UDP data
+	reception time That prevents errors such as switching to TCP when no UDP packets
+	are received immediatelly after connection establishment.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-02-04  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac, src/config.c, src/sec-mod.c: gnutls: increased
+	dependency to 3.3.0 That way PKCS#11 reinitialization and global initialization are
+	implicit.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-30  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: corrected artifacts dir in builds Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-29  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* m4/ax_code_coverage.m4: ax_code_coverage: updated to latest
+	version Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-28  Kevin Cernekee <cernekee@gmail.com>
+
+	* src/worker-http.c: Set AGENT_OPENCONNECT for Java/Android clients These use a slightly different User-Agent string.  If they are not
+	detected correctly, then IPv6-only VPNs will not work.  Since the Android bindings did not exist until 6.00, the V3 check is
+	unnecessary.  Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+
+2018-01-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* configure.ac: bumped version Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-23  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, Makefile.am, configure.ac, doc/Makefile.am,
+	doc/occtl.8.md, doc/ocpasswd.8.md, doc/ocserv.8.md,
+	src/Makefile.am, src/occtl/occtl-args.def,
+	src/ocpasswd/ocpasswd-args.def, src/ocserv-args.def: doc: man-pages
+	are modified to be generated using ronn That eliminates the need for autogen and also combines
+	doc/sample.config and manpage contents. Now the doc/sample.config is
+	the primary config documentation location.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/sup-config/file.c: config: skip unknown sections This would allow future extensibility, by making clients which don't
+	support a section to skip it.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, LICENSE, Makefile.am, configure.ac,
+	libopts/COPYING.gplv3, libopts/COPYING.lgplv3,
+	libopts/COPYING.mbsd, libopts/MakeDefs.inc, libopts/Makefile.am,
+	libopts/README, libopts/ag-char-map.h, libopts/alias.c,
+	libopts/ao-strs.c, libopts/ao-strs.h, libopts/autoopts.c,
+	libopts/autoopts.h, libopts/autoopts/options.h,
+	libopts/autoopts/project.h, libopts/autoopts/usage-txt.h,
+	libopts/boolean.c, libopts/check.c, libopts/compat/_Noreturn.h,
+	libopts/compat/compat.h, libopts/compat/pathfind.c,
+	libopts/compat/snprintf.c, libopts/compat/strchr.c,
+	libopts/compat/strdup.c, libopts/compat/windows-config.h,
+	libopts/configfile.c, libopts/cook.c, libopts/enum.c,
+	libopts/env.c, libopts/file.c, libopts/find.c, libopts/genshell.c,
+	libopts/genshell.h, libopts/gettext.h, libopts/init.c,
+	libopts/intprops.h, libopts/libopts.c, libopts/load.c,
+	libopts/m4/libopts.m4, libopts/m4/liboptschk.m4,
+	libopts/m4/stdnoreturn.m4, libopts/makeshell.c, libopts/nested.c,
+	libopts/numeric.c, libopts/option-value-type.c,
+	libopts/option-value-type.h, libopts/option-xat-attribute.c,
+	libopts/option-xat-attribute.h, libopts/parse-duration.c,
+	libopts/parse-duration.h, libopts/pgusage.c, libopts/proto.h,
+	libopts/putshell.c, libopts/reset.c, libopts/restore.c,
+	libopts/save.c, libopts/sort.c, libopts/stack.c,
+	libopts/stdnoreturn.in.h, libopts/streqvcmp.c, libopts/text_mmap.c,
+	libopts/time.c, libopts/tokenize.c, libopts/usage.c,
+	libopts/value-type.c, libopts/value-type.h, libopts/version.c,
+	libopts/xat-attribute.c, libopts/xat-attribute.h, src/Makefile.am,
+	src/common-config.h, src/common.mk, src/config.c,
+	src/inih/LICENSE.txt, src/inih/ini.c, src/inih/ini.h,
+	src/sup-config/file.c, src/sup-config/radius.c, src/tlslib.c,
+	src/vpn.h: Replaced the configuration parser with inih parser That eliminates the dependency on libopts as well as autogen.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* Makefile.am, configure.ac, src/Makefile.am, src/config.c,
+	src/ocserv-args.c.in, src/ocserv-args.h.in, src/sup-config/file.c,
+	src/sup-config/radius.c: ocserv: use getopt for command line parsing The complexity of its command line options didn't require the use of
+	libopts, and by eliminating that dependency for cmd parsing, we can
+	chose another parser for config file parsing.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-13  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* Makefile.am, configure.ac, src/Makefile.am,
+	src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,
+	src/ocpasswd/ocpasswd.c: ocpasswd: removed dependency on autogen The complexity of its command line options didn't require the
+	linking to yet another library.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml, configure.ac, src/Makefile.am: .gitlab-ci.yml:
+	added a -Werror build under F27 That helps catch any potential issues early.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-16  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: worker: check for POLLERR condition When checking the events returned from poll, handle the POLLERR
+	condition. This fixes an infinite loop on the worker's main loop.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: correctly point to scan-build
+	artifacts Also added missing gperf package.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitignore: .gitignore: ignore static libs Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-14  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-13  Daniel Lenski <daniel.lenski@finalphasesystems.com>
+
+	* src/html.c, tests/Makefile.am, tests/url-escape.c,
+	tests/url-unescape.c: Make escape_url() percent-escape fewer
+	characters and escape ' ' as '+' Per RFC 3986, neither ASCII alphanumeric characters, nor any of '-',
+	'_', '.', '~', need to be escaped anywhere in a URL or query string.
+
+2018-01-13  Daniel Lenski <daniel.lenski@finalphasesystems.com>
+
+	* tests/Makefile.am, tests/html-escape.c, tests/url-unescape.c: 
+	tests for unescaping decimal HTML escapes and '+' in URLs
+
+2018-01-12  Daniel Lenski <daniel.lenski@finalphasesystems.com>
+
+	* src/html.c: Correctly unescape '+' in URLs and decimal escapes in
+	XML (e.g. '&#32;' instead of '&#x20;') This patch changes only URL/XML unescaping, not escaping--changing
+	escaping would remove the reversibility of the tests.  I've been meaning to submit this ever since
+
+	http://lists.infradead.org/pipermail/openconnect-devel/2016-October/004042.htmlbut didn't have a particularly good reason.  However, I recently ran into a (weirdly-customized) version of
+	AnyConnect which actually sends '+' in one of the authentication
+	forms. So this should improve AnyConnect compatibility in some
+	corner cases.
+
+2018-01-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main-user.c, src/worker-http.c: replaced 'const static'
+	definitions with 'static const' Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* configure.ac: configure: use the -Wextra gcc flag for warnings Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-12  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/config.c: config: fixed incorrect sign check Resolves #132 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* README.md: README.md: updated link on technical info Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,
+	src/ocserv-args.c.in, src/ocserv-args.h.in: updated auto-generated
+	files Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS, configure.ac: bumped version Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: sessions: print the location when
+	printing the remote IP Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/occtl/unix.c, src/sec-mod-cookies.c: occtl:
+	improved session output That is, do not print expiration time in sessions that are in use
+	(they don't expire during that time), and print whether a session is
+	in use.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-07  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/main-auth.c: ocserv: improved session disconnection due to
+	re-use messages Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/Makefile.am, src/occtl/occtl.c, src/occtl/occtl.h,
+	src/occtl/session-cache.c, src/occtl/unix.c: occtl: introduced 'show
+	session' option This allows printing information related to a session.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-auth.c: sec-mod: always mark an active (open) session Previously it was only marked when an accounting module was present,
+	though now that we export data to occtl, that information is useful
+	even without accounting module.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: don't print compatibility fields by
+	default Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-cookies.c: sec-mod: avoid infinite loop in listing for
+	sessions When having only a single expired session, the security module could
+	enter an infinite loop attempting to list it.  Resolves #130 Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/occtl/unix.c: occtl: Last-Modified session printout moved to
+	compatibility options Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-06  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-cookie-invalidation, tests/test-cookie-timeout: tests:
+	updated for increase in slack time Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2018-01-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/main.c: forward_udp_to_owner: reduce the error log severity on
+	bind error There are case cases where binding on the received address is not
+	possible. As this is not a critical error, reduce its logging level
+	to info.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/sec-mod-cookies.c: ocserv: pass cookie expiration time to
+	occtl Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2018-01-05  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/occtl/unix.c: occtl: ensure initialization of printed
+	expiration and creation time Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-12-26  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-17  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/vpn.h: vpn.h: increased AUTH_SLACK_TIME to 15 secs and
+	documented its use Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* doc/sample.config, src/ocserv-args.def: sample.config: added
+	session-timeout parameter Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* tests/test-cookie-invalidation: tests: updated to account for
+	changes in cookie invalidation Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/occtl/unix.c: occtl: print cookie expiration
+	time Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/ipc.proto, src/occtl/unix.c, src/sec-mod-cookies.c: occtl:
+	replaced last_modified time with created ocserv no longer sends the last modified time, but rather the cookie
+	creation time.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod-auth.c, src/sec-mod-cookies.c, src/sec-mod-db.c,
+	src/sec-mod.h: sec-mod: separated expiration from creation time
+	fields That allows to set explicit expiration of the cookie, and ensure
+	that we can close a session in a way that we provide a limited time
+	window for it to re-open. That handles anyconnect client
+	compatibility; this client terminates and reconnects using the
+	original cookie, multiple times.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/base64-helper.c: base64-helper: use casts to avoid
+	warnings with various nettle3 versions Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/worker-http.c: lz4: use LZ4_compress_default instead of the
+	deprecated limitedOutput Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/config.c, src/main-sec-mod-cmd.c, src/tun.c: Avoid gcc
+	warnings due to snprintf truncation Detect such truncation and act accordingly.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-12-10  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/sec-mod.c, src/tlslib.c: tlslib: eliminate warnings due to
+	unused functions These warnings were related to gnutls 3.6.x support.  Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-11-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* NEWS: doc update Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-11-27  Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+	* src/worker-vpn.c: dtls: do increase handshake timeout and decrease
+	retransmission time That in effect enables the default timeouts described in
+	gnutls_dtls_set_timeouts which are 60 seconds, and sets
+	retransmissions to occur in half a second.  Relates #122 Signed-off-by: Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+2017-11-22  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* src/common/common.c: cmd_request_to_str: print the name of list
+	cookies msg and its reply Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-11-19  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* .gitlab-ci.yml: .gitlab-ci.yml: added fedora rawhide build Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+2017-10-21  Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
+	* NEWS: doc update [ci skip] Signed-off-by: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+
 2017-10-09  Nikos Mavrogiannopoulos <nmav@gnutls.org>
 
 	* src/ocpasswd/ocpasswd-args.c.in, src/ocpasswd/ocpasswd-args.h.in,

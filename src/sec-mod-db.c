@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014 Red Hat
+ * Copyright (C) 2017 Nikos Mavrogiannopoulos
  *
  * This file is part of ocserv.
  *
@@ -84,12 +85,13 @@ struct htable *db = sec->client_db;
 		return 0;
 }
 
-client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
+client_entry_st *new_client_entry(sec_mod_st *sec, struct vhost_cfg_st *vhost, const char *ip, unsigned pid)
 {
 	struct htable *db = sec->client_db;
 	client_entry_st *e, *te;
 	int ret;
 	int retries = 3;
+	time_t now;
 
 	e = talloc_zero(db, client_entry_st);
 	if (e == NULL) {
@@ -98,6 +100,7 @@ client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
 
 	strlcpy(e->acct_info.remote_ip, ip, sizeof(e->acct_info.remote_ip));
 	e->acct_info.id = pid;
+	e->vhost = vhost;
 
 	do {
 		ret = gnutls_rnd(GNUTLS_RND_RANDOM, e->sid, sizeof(e->sid));
@@ -117,7 +120,9 @@ client_entry_st *new_client_entry(sec_mod_st *sec, const char *ip, unsigned pid)
 	}
 
 	calc_safe_id(e->sid, SID_SIZE, (char *)e->acct_info.safe_id, sizeof(e->acct_info.safe_id));
-	e->time = time(0);
+	now = time(0);
+	e->exptime = now + vhost->perm_config.config->cookie_timeout + AUTH_SLACK_TIME;
+	e->created = now;
 
 	if (htable_add(db, rehash(e, NULL), e) == 0) {
 		seclog(sec, LOG_ERR,
@@ -187,18 +192,29 @@ void del_client_entry(sec_mod_st *sec, client_entry_st * e)
 
 void expire_client_entry(sec_mod_st *sec, client_entry_st * e)
 {
+	time_t now;
+
 	if (e->in_use > 0)
 		e->in_use--;
 	if (e->in_use == 0) {
-		e->time = time(0);
-
-		if (sec->config->persistent_cookies == 0 && (e->discon_reason == REASON_USER_DISCONNECT
-		    || e->discon_reason == REASON_SERVER_DISCONNECT || e->discon_reason == REASON_SESSION_TIMEOUT)) {
+		if (e->vhost->perm_config.config->persistent_cookies == 0 && (e->discon_reason == REASON_SERVER_DISCONNECT ||
+		    e->discon_reason == REASON_SESSION_TIMEOUT)) {
 			seclog(sec, LOG_INFO, "invalidating session of user '%s' "SESSION_STR,
-				e->acct_info.username, e->acct_info.safe_id);
+			       e->acct_info.username, e->acct_info.safe_id);
 			/* immediately disconnect the user */
 			del_client_entry(sec, e);
 		} else {
+			now = time(0);
+			/* We intentionally don't close the session immediatelly on
+			 * REASON_USER_DISCONNECT, as some anyconect clients
+			 * explicitly disconnect with the intention to reconnect
+			 * seconds later. */
+			if (e->discon_reason == REASON_USER_DISCONNECT) {
+				if (!e->vhost->perm_config.config->persistent_cookies || (now+AUTH_SLACK_TIME >= e->exptime))
+					e->exptime = now + AUTH_SLACK_TIME;
+			} else {
+				e->exptime = now + e->vhost->perm_config.config->cookie_timeout + AUTH_SLACK_TIME;
+			}
 			seclog(sec, LOG_INFO, "temporarily closing session for %s "SESSION_STR, e->acct_info.username, e->acct_info.safe_id);
 		}
 	}

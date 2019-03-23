@@ -1,8 +1,5 @@
-Gitlab CI [![Build status](https://gitlab.com/ocserv/ocserv/badges/master/build.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
- Travis [![Build Status](https://travis-ci.org/openconnect/ocserv.svg?branch=master)](https://travis-ci.org/openconnect/ocserv)
-
-[![coverage report](https://gitlab.com/ocserv/ocserv/badges/master/coverage.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
-(coverage report doesn't include tests that run under docker)
+[![Build status](https://gitlab.com/ocserv/ocserv/badges/master/build.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
+[![coverage report](https://gitlab.com/ocserv/ocserv/badges/master/coverage.svg)](https://ocserv.gitlab.io/ocserv/coverage/)
 
 # About
 
@@ -35,7 +32,6 @@ seccomp:      libseccomp-dev     / libseccomp-devel
 occtl:        libreadline-dev    / readline-devel
               libnl-route-3-dev  / libnl3-devel
 GSSAPI:       libkrb5-dev        / krb5-devel
-OATH:         liboath-dev        / liboath-devel
 Radius:       libradcli-dev      / radcli-devel
 ```
 
@@ -43,12 +39,10 @@ Dependencies for development, testing, or dependencies that can be skipped
 in an embedded system (e.g., because a replacement library is included):
 
 ```
-libprotobuf-c0-dev / protobuf-c-devel
+libprotobuf-c-dev  / protobuf-c-devel
 libtalloc-dev      / libtalloc-devel
 libhttp-parser-dev / http-parser-devel
 libpcl1-dev        / pcllib-devel
-libopts25-dev      / autogen-libopts-devel
-autogen            / autogen
 protobuf-c-compiler/ protobuf-c
 gperf              / gperf
 liblockfile-bin    / lockfile-progs
@@ -59,7 +53,8 @@ libpam-wrapper     / pam_wrapper
 libnss-wrapper     / nss_wrapper
 libsocket-wrapper  / socket_wrapper
 gss-ntlmssp        / gssntlmssp
-libpam-oath        / pam_oath
+haproxy            / haproxy
+iputils-ping       / iputils
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
@@ -73,10 +68,6 @@ To build from a distributed release use:
 $ ./configure && make && make check
 ```
 
-When cross compiling it may be useful to add the --enable-local-libopts
-option to configure.
-
-
 To test the code coverage of the test suite use the following:
 ```
 $ ./configure --enable-code-coverage
@@ -87,18 +78,13 @@ Note that the code coverage reported does not currently include tests which
 are run within docker.
 
 In addition to the prerequisites listed above, building from git requires
-the following packages: autoconf, automake, autogen, git2cl, and xz.
+the following packages: autoconf, automake, git2cl, and xz.
 
 To build from the git repository use:
 ```
 $ autoreconf -fvi
 $ ./configure && make
 ```
-
-
-Note that the system's autogen version must match the included libopts
-version on the development system, if the included libopts library is to
-be used.
 
 
 # Basic installation instructions
@@ -139,7 +125,16 @@ You may examine the output using:
 ```
 
 
+# Continuous Integration (CI)
+
+We utilize the gitlab-ci continuous integration system. It is used to test
+most of the Linux systems (see .gitlab-ci.yml),and is split in two phases,
+build image creation and compilation/test. The build image creation is done
+at the ocserv/build-images subproject and uploads the image at the gitlab.com
+container registry. The compilation/test phase is on every commit to project.
+
+
 # How the VPN works
 
-Please see the [technical description page](http://www.infradead.org/ocserv/technical.html).
+Please see the [technical description page](http://ocserv.gitlab.io/www/technical.html).
 

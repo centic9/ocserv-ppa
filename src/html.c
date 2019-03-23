@@ -64,13 +64,18 @@ char *unescape_html(void *pool, const char *html, unsigned len, unsigned *out_le
 			} else if (!c_strncasecmp(&html[i], "&apos;", 6)) {
 				msg[pos++] = '\'';
 				i += 6;
-			} else if (!strncmp(&html[i], "&#x", 3)) {
+			} else if (!strncmp(&html[i], "&#", 2)) {
 				const char *p = &html[i];
 				char *endptr = NULL;
 				long val;
 
-				p+=3;
-				val = strtol(p, &endptr, 16);
+				if (p[2]=='x') {
+					p += 3;
+					val = strtol(p, &endptr, 16);
+				} else {
+					p += 2;
+					val = strtol(p, &endptr, 10);
+				}
 				if (endptr == NULL || *endptr != ';' || val > WCHAR_MAX) {
 					/* skip */
 					msg[pos++] = html[i++];
@@ -134,6 +139,9 @@ char *unescape_url(void *pool, const char *url, unsigned len, unsigned *out_len)
 
 			msg[pos++] = u;
 			i += 3;
+		} else if (url[i] == '+') {
+			msg[pos++] = ' ';
+			i++;
 		} else
 			msg[pos++] = url[i++];
 	}
@@ -156,8 +164,11 @@ char *escape_url(void *pool, const char *url, unsigned len, unsigned *out_len)
 		return NULL;
 
 	for (i = pos = 0; i < len;) {
-		if (c_isalpha(url[i])) {
+		if (c_isalnum(url[i]) || url[i]=='-' || url[i]=='_' || url[i]=='.' || url[i]=='~') {
 			msg[pos++] = url[i++];
+		} else if (url[i] == ' ') {
+			msg[pos++] = '+';
+			i++;
 		} else {
 			snprintf(&msg[pos], 4, "%%%02X", (unsigned)url[i++]);
 			pos+=3;

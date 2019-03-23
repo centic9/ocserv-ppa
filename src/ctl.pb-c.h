@@ -133,10 +133,11 @@ struct  _UserInfoRep
    * a value derived from the cookie 
    */
   ProtobufCBinaryData safe_id;
+  char *vhost;
 };
 #define USER_INFO_REP__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&user_info_rep__descriptor) \
-    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, 0,NULL, NULL, 0,NULL, 0, 0, 0, 0,NULL, {0,NULL} }
+    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 0,0, 0,0, 0,NULL, 0,NULL, 0,NULL, 0,NULL, 0,0, NULL, NULL, 0,NULL, NULL, 0,NULL, 0, 0, 0, 0,NULL, {0,NULL}, NULL }
 
 
 struct  _UserListRep

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2017 Nikos Mavrogiannopoulos
  *
  * Author: Nikos Mavrogiannopoulos
  *
@@ -87,7 +87,7 @@ inline static const char *proto_to_str(fw_proto_t proto)
 		"icmpv6"
 	};
 
-	if (proto < 0 || proto >= PROTO_MAX)
+	if ((int)proto < 0 || proto >= PROTO_MAX)
 		return "unknown";
 	return proto2str[proto];
 }
@@ -145,9 +145,11 @@ extern int syslog_open;
 #include "defs.h"
 
 /* Allow few seconds prior to cleaning up entries, to avoid any race
- * conditions when session control is enabled.
+ * conditions when session control is enabled, as well as to allow
+ * anyconnect clients to reconnect (they often drop the connection and
+ * to to re-establish using the same cookie).
  */
-#define AUTH_SLACK_TIME 10
+#define AUTH_SLACK_TIME 15
 
 
 #define MAX_CIPHERSUITE_NAME 64
@@ -190,12 +192,15 @@ typedef struct auth_struct_st {
 	char *additional;
 	unsigned type;
 	const struct auth_mod_st *amod;
+	void *auth_ctx;
+
 	bool enabled;
 } auth_struct_st;
 
 typedef struct acct_struct_st {
 	const char *name;
 	char *additional;
+	void *acct_ctx;
 	const struct acct_mod_st *amod;
 } acct_struct_st;
 
@@ -286,7 +291,6 @@ struct cfg_st {
 	unsigned max_same_clients;
 	unsigned use_utmp;
 	unsigned tunnel_all_dns;
-	unsigned use_dbus; /* whether the D-BUS service is registered */
 	unsigned use_occtl; /* whether support for the occtl tool will be enabled */
 
 	unsigned try_mtu; /* MTU discovery enabled */
@@ -374,6 +378,7 @@ struct perm_cfg_st {
 
 	unsigned int stats_reset_time;
 	unsigned foreground;
+	unsigned no_chdir;
 	unsigned debug;
 
 	char *ca;
@@ -423,11 +428,12 @@ enum option_types { OPTION_NUMERIC, OPTION_STRING, OPTION_BOOLEAN, OPTION_MULTI_
 
 #include <ip-util.h>
 
-void reload_cfg_file(void *pool, struct perm_cfg_st* config, unsigned archive);
-void clear_old_configs(struct perm_cfg_st* config);
-void clear_cfg(struct perm_cfg_st* config);
+void reload_cfg_file(void *pool, struct list_head *configs, unsigned sec_mod);
+void clear_old_configs(struct list_head *configs);
 void write_pid_file(void);
 void remove_pid_file(void);
+
+unsigned switch_comp_priority(void *pool, const char *modstring);
 
 extern sigset_t sig_default_set;
 

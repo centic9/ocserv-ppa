@@ -35,6 +35,14 @@
 #include "defs.h"
 #include "common/base64-helper.h"
 
+const char *_vhost_prefix(const char *name)
+{
+	static char tmp[128];
+
+	snprintf(tmp, sizeof(tmp), "vhost:%s: ", name);
+	return tmp;
+}
+
 /* A hash of the input, to a 20-byte output. The goal is one-wayness.
  */
 static void safe_hash(const uint8_t *data, unsigned data_size, uint8_t output[20])
@@ -126,14 +134,26 @@ const char *cmd_request_to_str(unsigned _cmd)
 		return "sm: decrypt";
 	case CMD_SEC_SIGN:
 		return "sm: sign";
+	case CMD_SECM_STATS:
+		return "sm: stats";
 	case CMD_SECM_SESSION_CLOSE:
 		return "sm: session close";
 	case CMD_SECM_SESSION_OPEN:
 		return "sm: session open";
+	case CMD_SECM_SESSION_REPLY:
+		return "sm: session reply";
 	case CMD_SECM_BAN_IP:
 		return "sm: ban IP";
 	case CMD_SECM_BAN_IP_REPLY:
 		return "sm: ban IP reply";
+	case CMD_SECM_RELOAD:
+		return "sm: reload";
+	case CMD_SECM_RELOAD_REPLY:
+		return "sm: reload reply";
+	case CMD_SECM_LIST_COOKIES:
+		return "sm: list cookies";
+	case CMD_SECM_LIST_COOKIES_REPLY:
+		return "sm: list cookies reply";
 	default:
 		snprintf(tmp, sizeof(tmp), "unknown (%u)", _cmd);
 		return tmp;
@@ -666,7 +686,7 @@ int recv_socket_msg(void *pool, int fd, uint8_t cmd,
 		}
 	}
 
-	if (length > 0) {
+	if (length > 0 && msg) {
 		data = talloc_size(pool, length);
 		if (data == NULL) {
 			ret = ERR_MEM;

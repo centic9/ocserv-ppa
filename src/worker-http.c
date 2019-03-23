@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015-2018 Nikos Mavrogiannopoulos
  * Copyright (C) 2015 Red Hat
  *
  * This file is part of ocserv.
@@ -51,7 +52,7 @@ struct known_urls_st {
 
 #define LL(x,y,z) {x, sizeof(x)-1, 0, y, z}
 #define LL_DIR(x,y,z) {x, sizeof(x)-1, 1, y, z}
-const static struct known_urls_st known_urls[] = {
+static const struct known_urls_st known_urls[] = {
 	LL("/", get_auth_handler, post_auth_handler),
 	LL("/auth", get_auth_handler, post_auth_handler),
 	LL("/VPN", get_auth_handler, post_auth_handler),
@@ -76,6 +77,15 @@ const static struct known_urls_st known_urls[] = {
 	{NULL, 0, 0, NULL, NULL}
 };
 
+/* In the following we use %NO_SESSION_HASH:%DISABLE_SAFE_RENEGOTIATION because certain
+ * versions of openssl send the extended master secret extension in this
+ * resumed session. Since the state of this extension is undefined
+ * (it's not a real session we are resuming), we explicitly disable this
+ * extension to avoid interop issues. Furthermore gnutls does seem to
+ * be sending the renegotiation extension which openssl doesn't like (see #193) */
+
+#define WORKAROUND_STR "%NO_SESSION_HASH:%DISABLE_SAFE_RENEGOTIATION"
+
 /* Consider switching to gperf when this table grows significantly.
  * These tables are used for the custom DTLS cipher negotiation via
  * HTTP headers (WTF), and the compression negotiation.
@@ -84,28 +94,36 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	{
 	 .oc_name = CS_AES128_GCM,
 	 .gnutls_name =
-	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-128-GCM:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-128-GCM:+AEAD:+RSA:+SIGN-ALL:"WORKAROUND_STR,
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
 	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_128_GCM,
-	 .txt_version = "3.2.7",
-	 .server_prio = 90},
+	 .server_prio = 80},
 	{
 	 .oc_name = CS_AES256_GCM,
 	 .gnutls_name =
-	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-256-GCM:+AEAD:+RSA:%COMPAT:+SIGN-ALL",
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-256-GCM:+AEAD:+RSA:+SIGN-ALL:"WORKAROUND_STR,
 	 .gnutls_version = GNUTLS_DTLS1_2,
 	 .gnutls_mac = GNUTLS_MAC_AEAD,
 	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_AES_256_GCM,
-	 .server_prio = 80,
-	 .txt_version = "3.2.7",
+	 .server_prio = 90,
+	 },
+	{
+	 .oc_name = "AES256-SHA",
+	 .gnutls_name =
+	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+AES-256-CBC:+SHA1:+RSA:"WORKAROUND_STR,
+	 .gnutls_version = GNUTLS_DTLS0_9,
+	 .gnutls_mac = GNUTLS_MAC_SHA1,
+	 .gnutls_kx = GNUTLS_KX_RSA,
+	 .gnutls_cipher = GNUTLS_CIPHER_AES_256_CBC,
+	 .server_prio = 60,
 	 },
 	{
 	 .oc_name = "AES128-SHA",
 	 .gnutls_name =
-	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+AES-128-CBC:+SHA1:+RSA:%COMPAT",
+	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+AES-128-CBC:+SHA1:+RSA:"WORKAROUND_STR,
 	 .gnutls_version = GNUTLS_DTLS0_9,
 	 .gnutls_mac = GNUTLS_MAC_SHA1,
 	 .gnutls_kx = GNUTLS_KX_RSA,
@@ -115,13 +133,38 @@ static const dtls_ciphersuite_st ciphersuites[] = {
 	{
 	 .oc_name = "DES-CBC3-SHA",
 	 .gnutls_name =
-	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+3DES-CBC:+SHA1:+RSA:%COMPAT",
+	 "NONE:+VERS-DTLS0.9:+COMP-NULL:+3DES-CBC:+SHA1:+RSA:"WORKAROUND_STR,
 	 .gnutls_version = GNUTLS_DTLS0_9,
 	 .gnutls_mac = GNUTLS_MAC_SHA1,
 	 .gnutls_kx = GNUTLS_KX_RSA,
 	 .gnutls_cipher = GNUTLS_CIPHER_3DES_CBC,
 	 .server_prio = 1,
 	 }
+};
+
+static const dtls_ciphersuite_st ciphersuites12[] = {
+	{
+	 .oc_name = "AES128-GCM-SHA256",
+	 .gnutls_name =
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-128-GCM:+AEAD:+RSA:+SIGN-ALL:"WORKAROUND_STR,
+	 .gnutls_version = GNUTLS_DTLS1_2,
+	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_kx = GNUTLS_KX_RSA,
+	 .gnutls_cipher = GNUTLS_CIPHER_AES_128_GCM,
+	 .dtls12_mode = 1,
+	 .server_prio = 50
+	},
+	{
+	 .oc_name = "AES256-GCM-SHA384",
+	 .gnutls_name =
+	 "NONE:+VERS-DTLS1.2:+COMP-NULL:+AES-256-GCM:+AEAD:+RSA:+SIGN-ALL:"WORKAROUND_STR,
+	 .gnutls_version = GNUTLS_DTLS1_2,
+	 .gnutls_mac = GNUTLS_MAC_AEAD,
+	 .gnutls_kx = GNUTLS_KX_RSA,
+	 .gnutls_cipher = GNUTLS_CIPHER_AES_256_GCM,
+	 .dtls12_mode = 1,
+	 .server_prio = 90
+	}
 };
 
 #ifdef HAVE_LZ4
@@ -137,7 +180,7 @@ int lz4_compress(void *dst, int dstlen, const void *src, int srclen)
 {
 	/* we intentionally restrict output to srclen so that
 	 * compression fails early for packets that expand. */
-	return LZ4_compress_limitedOutput(src, dst, srclen, srclen);
+	return LZ4_compress_default(src, dst, srclen, srclen);
 }
 #endif
 
@@ -162,6 +205,47 @@ struct compression_method_st comp_methods[] = {
 };
 #endif
 
+unsigned switch_comp_priority(void *pool, const char *modstring)
+{
+	unsigned i, ret;
+	char *token, *str;
+	const char *algo = NULL;
+	long priority = -1;
+
+	str = talloc_strdup(pool, modstring);
+	if (!str)
+		return 0;
+
+	token = str;
+	token = strtok(token, ":");
+
+	algo = token;
+
+	token = strtok(NULL, ":");
+	if (token)
+		priority = strtol(token, NULL, 10);
+
+	if (algo == NULL || priority <= 0) {
+		ret = 0;
+		goto finish;
+	}
+	for (i = 0;
+	     i < sizeof(comp_methods) / sizeof(comp_methods[0]);
+	     i++) {
+		if (c_strcasecmp(algo, comp_methods[i].name) == 0) {
+			comp_methods[i].server_prio = priority;
+			ret = 1;
+			goto finish;
+		}
+	}
+
+	ret = 0;
+
+ finish:
+	talloc_free(str);
+	return ret;
+}
+
 static
 void header_value_check(struct worker_st *ws, struct http_req_st *req)
 {
@@ -171,15 +255,16 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	char *token, *value;
 	char *str, *p;
 	const dtls_ciphersuite_st *cand = NULL;
+	const dtls_ciphersuite_st *saved_ciphersuite;
 	const compression_method_st *comp_cand = NULL;
 	const compression_method_st **selected_comp;
-	gnutls_cipher_algorithm_t want_cipher;
-	gnutls_mac_algorithm_t want_mac;
+	int want_cipher;
+	int want_mac;
 
 	if (req->value.length <= 0)
 		return;
 
-	if (ws->perm_config->debug < DEBUG_SENSITIVE &&
+	if (WSPCONFIG(ws)->debug < DEBUG_SENSITIVE &&
 		((req->header.length == 6 && strncasecmp((char*)req->header.data, "Cookie", 6) == 0) ||
 		(req->header.length == 20 && strncasecmp((char*)req->header.data, "X-DTLS-Master-Secret", 20) == 0)))
 		oclog(ws, LOG_HTTP_DEBUG, "HTTP processing: %.*s: (censored)", (int)req->header.length,
@@ -199,7 +284,7 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 
 	switch (req->next_header) {
 	case HEADER_MASTER_SECRET:
-		if (req->use_psk || !ws->config->dtls_legacy) /* ignored */
+		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy) /* ignored */
 			break;
 
 		if (value_length < TLS_MASTER_SIZE * 2) {
@@ -254,8 +339,12 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		}
 		break;
 	case HEADER_SUPPORT_SPNEGO:
-		ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
-		req->spnego_set = 1;
+		/* Switch to GSSAPI if the client supports it, but only
+		 * if we haven't already authenticated with a certificate */
+		if (!((ws->selected_auth->type & AUTH_TYPE_CERTIFICATE) && ws->cert_auth_ok != 0)) {
+			ws_switch_auth_to(ws, AUTH_TYPE_GSSAPI);
+			req->spnego_set = 1;
+		}
 		break;
 	case HEADER_AUTHORIZATION:
 		if (req->authorization != NULL)
@@ -282,22 +371,30 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 				req->user_agent_type = AGENT_OPENCONNECT_V3;
 			else
 				req->user_agent_type = AGENT_OPENCONNECT;
+		} else if (strncasecmp(req->user_agent, "OpenConnect VPN Agent", 21) == 0) {
+			req->user_agent_type = AGENT_OPENCONNECT;
 		}
 		break;
 
 	case HEADER_DTLS_CIPHERSUITE:
-		req->selected_ciphersuite = NULL;
+		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
+			break;
+
 		str = (char *)value;
 
 		p = strstr(str, DTLS_PROTO_INDICATOR);
 		if (p != NULL && (p[sizeof(DTLS_PROTO_INDICATOR)-1] == 0 || p[sizeof(DTLS_PROTO_INDICATOR)-1] == ':')) {
 			/* OpenConnect DTLS setup was detected. */
-			if (ws->config->dtls_psk) {
+			if (WSCONFIG(ws)->dtls_psk) {
 				req->use_psk = 1;
 				req->master_secret_set = 1; /* we don't need it */
+				req->selected_ciphersuite = NULL;
 				break;
 			}
 		}
+
+		if (req->selected_ciphersuite) /* if set via HEADER_DTLS12_CIPHERSUITE */
+			break;
 
 		if (ws->session != NULL) {
 			want_mac = gnutls_mac_get(ws->session);
@@ -312,10 +409,6 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 			     i < sizeof(ciphersuites) / sizeof(ciphersuites[0]);
 			     i++) {
 				if (strcmp(token, ciphersuites[i].oc_name) == 0) {
-					if (ciphersuites[i].txt_version != NULL && gnutls_check_version(ciphersuites[i].txt_version) == NULL) {
-						continue; /* not supported */
-					}
-
 					if (cand == NULL ||
 					    cand->server_prio < ciphersuites[i].server_prio ||
 					    (want_cipher != -1 && want_cipher == ciphersuites[i].gnutls_cipher &&
@@ -339,10 +432,80 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	        req->selected_ciphersuite = cand;
 
 		break;
+
+	case HEADER_DTLS12_CIPHERSUITE:
+		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
+			break;
+
+		/* in gnutls 3.6.0+ there is a regression which makes
+		 * anyconnect's openssl fail: https://gitlab.com/gnutls/gnutls/merge_requests/868
+		 */
+#ifdef gnutls_check_version_numeric
+		if (!gnutls_check_version_numeric(3,6,6) &&
+		    (!gnutls_check_version_numeric(3,3,0) || gnutls_check_version_numeric(3,6,0))) {
+			break;
+		}
+#endif
+
+		str = (char *)value;
+
+		p = strstr(str, DTLS_PROTO_INDICATOR);
+		if (p != NULL && (p[sizeof(DTLS_PROTO_INDICATOR)-1] == 0 || p[sizeof(DTLS_PROTO_INDICATOR)-1] == ':')) {
+			/* OpenConnect DTLS setup was detected. */
+			if (WSCONFIG(ws)->dtls_psk) {
+				req->use_psk = 1;
+				req->master_secret_set = 1; /* we don't need it */
+				req->selected_ciphersuite = NULL;
+				break;
+			}
+		}
+
+		saved_ciphersuite = req->selected_ciphersuite;
+		req->selected_ciphersuite = NULL;
+
+		if (ws->session != NULL) {
+			want_mac = gnutls_mac_get(ws->session);
+			want_cipher = gnutls_cipher_get(ws->session);
+		} else {
+			want_mac = -1;
+			want_cipher = -1;
+		}
+
+		while ((token = strtok(str, ":")) != NULL) {
+			for (i = 0;
+			     i < sizeof(ciphersuites12) / sizeof(ciphersuites12[0]);
+			     i++) {
+				if (strcmp(token, ciphersuites12[i].oc_name) == 0) {
+					if (cand == NULL ||
+					    cand->server_prio < ciphersuites12[i].server_prio ||
+					    (want_cipher != -1 && want_cipher == ciphersuites12[i].gnutls_cipher &&
+					     want_mac == ciphersuites12[i].gnutls_mac)) {
+						cand =
+						    &ciphersuites12[i];
+
+						/* if our candidate matches the TLS session
+						 * ciphersuite, we are finished */
+						if (want_cipher != -1) {
+							if (want_cipher == cand->gnutls_cipher &&
+							    want_mac == cand->gnutls_mac)
+							    goto ciphersuite12_finish;
+						}
+					}
+				}
+			}
+			str = NULL;
+		}
+ ciphersuite12_finish:
+	        req->selected_ciphersuite = cand;
+
+	        if (req->selected_ciphersuite == NULL && saved_ciphersuite)
+			req->selected_ciphersuite = saved_ciphersuite;
+
+		break;
 #ifdef ENABLE_COMPRESSION
 	case HEADER_DTLS_ENCODING:
 	case HEADER_CSTP_ENCODING:
-	        if (ws->config->enable_compression == 0)
+	        if (WSCONFIG(ws)->enable_compression == 0)
 	        	break;
 
 		if (req->next_header == HEADER_DTLS_ENCODING)
@@ -498,8 +661,8 @@ url_handler_fn http_post_url_handler(struct worker_st *ws, const char *url)
 		p++;
 	} while (p->url != NULL);
 
-	for (i=0;i<ws->config->kkdcp_size;i++) {
-		if (ws->config->kkdcp[i].url && strcmp(ws->config->kkdcp[i].url, url) == 0)
+	for (i=0;i<WSCONFIG(ws)->kkdcp_size;i++) {
+		if (WSCONFIG(ws)->kkdcp[i].url && strcmp(WSCONFIG(ws)->kkdcp[i].url, url) == 0)
 			return post_kkdcp_handler;
 	}
 
@@ -586,11 +749,11 @@ int http_header_complete_cb(http_parser * parser)
 	/* handle header value */
 	header_value_check(ws, req);
 
-	if (ws->selected_auth->type & AUTH_TYPE_GSSAPI && ws->auth_state == S_AUTH_INACTIVE &&
+	if ((ws->selected_auth->type & AUTH_TYPE_GSSAPI) && ws->auth_state == S_AUTH_INACTIVE &&
 	    req->spnego_set == 0) {
 		/* client retried getting the form without the SPNEGO header, probably
 		 * wants a fallback authentication method */
-		if (ws_switch_auth_to(ws, AUTH_TYPE_USERNAME_PASS) == 0)
+		if (ws_switch_auth_to_next(ws) == 0)
 			oclog(ws, LOG_INFO, "no fallback from gssapi authentication");
 	}
 
