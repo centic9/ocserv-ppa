@@ -630,6 +630,8 @@ LTLIBUTIL = @LTLIBUTIL@
 LTLIBWRAP = @LTLIBWRAP@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MAXMIND_CFLAGS = @MAXMIND_CFLAGS@
+MAXMIND_LIBS = @MAXMIND_LIBS@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_ERRNO_H = @NEXT_AS_FIRST_DIRECTIVE_ERRNO_H@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
@@ -863,7 +865,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -874,16 +875,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = passwd ocserv.conf Dockerfile-debian-tcp dev-tun.tgz myscript key.pem cert.pem \
 	Dockerfile-debian-unix ocserv-unix.conf haproxy.cfg combo.pem Dockerfile-fedora-unix \
-	Dockerfile-fedora-tcp freeradius-users Dockerfile-debian-radius Dockerfile-fedora-radius \
-	freeradius-users ocserv-radius.conf radiusclient.conf radius-clients.conf \
-	radiusclient-servers ca.pem ocserv-radius-config.conf \
-	Dockerfile-fedora-radius-config radius-dictionary Dockerfile-debian-radius-config \
-	ocserv-proxyproto.conf Dockerfile-fedora-proxyproto haproxy-proxyproto.cfg \
+	Dockerfile-fedora-tcp ca.pem ocserv-proxyproto.conf Dockerfile-fedora-proxyproto haproxy-proxyproto.cfg \
 	haproxy-proxyproto-unix.cfg Dockerfile-fedora-proxyproto-unix ocserv-proxyproto-unix.conf \
 	proxy-connectscript \
 	Dockerfile-fedora-reload \
-	ocserv-reload.conf radiusclient-debian.conf \
-	ocserv-radius-group.conf Dockerfile-fedora-radius-group
+	ocserv-reload.conf
 
 TESTS_ENVIRONMENT = srcdir="$(srcdir)" \
 	top_builddir="$(top_builddir)"
@@ -900,9 +896,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu tests/docker-ocserv/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign tests/docker-ocserv/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu tests/docker-ocserv/Makefile
+	  $(AUTOMAKE) --foreign tests/docker-ocserv/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

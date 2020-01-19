@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Nikos Mavrogiannopoulos
+ * Copyright (C) 2013-2019 Nikos Mavrogiannopoulos
  *
  * This file is part of ocserv.
  *
@@ -30,6 +30,15 @@
 #include <seccomp.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+
+/* libseccomp 2.4.2 broke accidentally the API. Work around it. */
+#ifndef __SNR_ppoll
+# ifdef __NR_ppoll
+#  define __SNR_ppoll			__NR_ppoll
+# else
+#  define __SNR_ppoll			__PNR_ppoll
+# endif
+#endif
 
 int disable_system_calls(struct worker_st *ws)
 {
@@ -112,6 +121,7 @@ int disable_system_calls(struct worker_st *ws)
 		if (vhost->perm_config.config->xml_config_file) {
 			ADD_SYSCALL(stat, 0);
 			ADD_SYSCALL(open, 0);
+			ADD_SYSCALL(openat, 0);
 			break;
 		}
 	}

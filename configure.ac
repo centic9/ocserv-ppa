@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT([ocserv], [0.12.2], [openconnect-devel@lists.infradead.org])
+AC_INIT([ocserv], [0.12.6], [openconnect-devel@lists.infradead.org])
 PKG_PROG_PKG_CONFIG
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -116,6 +116,13 @@ AC_ARG_WITH(docker-tests,
 
 AM_CONDITIONAL(ENABLE_DOCKER_TESTS, test "x$docker_tests" = xyes)
 
+AC_ARG_WITH(kerberos-tests,
+  AS_HELP_STRING([--with-kerberos-tests], [enable any tests requiring kerberos setup]),
+  kerberos_tests=$withval,
+  kerberos_tests=no)
+
+AM_CONDITIONAL(ENABLE_KERBEROS_TESTS, test "x$kerberos_tests" = xyes)
+
 AC_ARG_WITH(nuttcp-tests,
   AS_HELP_STRING([--without-nuttcp-tests], [disable any tests requiring nuttcp]),
   nuttcp_tests=$withval,
@@ -163,13 +170,28 @@ if test "$test_for_libnl" = yes;then
   fi
 fi
 
+AC_ARG_WITH(maxmind,
+  AS_HELP_STRING([--without-maxmind], [do not try to use the maxmind library]),
+  test_for_maxmind=$withval,
+  test_for_maxmind=yes)
+
+have_maxmind=no
+if test "$test_for_maxmind" = yes;then
+  PKG_CHECK_MODULES(MAXMIND, libmaxminddb >= 1.0.0, [have_maxmind=yes], [have_maxmind=no])
+  if test "$have_maxmind" = yes;then
+    AC_DEFINE(HAVE_MAXMIND, 1, [have libmaxminddb])
+  fi
+fi
+
+AM_CONDITIONAL(HAVE_MAXMIND, test "x$have_maxmind" != xno)
+
 AC_ARG_WITH(geoip,
   AS_HELP_STRING([--without-geoip], [do not try to use the geoip library]),
   test_for_geoip=$withval,
   test_for_geoip=yes)
 
 have_geoip=no
-if test "$test_for_geoip" = yes;then
+if test "$test_for_geoip" = yes && test "$have_maxmind" != yes;then
   PKG_CHECK_MODULES(GEOIP, geoip >= 1.6.0, [have_geoip=yes], [have_geoip=no])
   if test "$have_geoip" = yes;then
     AC_DEFINE(HAVE_GEOIP, 1, [have libgeoip])
@@ -567,9 +589,7 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	gl/Makefile
 	tests/docker-ocserv/Makefile
-	tests/docker-kerberos/Makefile
 	tests/data/pam/ocserv
-	tests/data/pam-single/ocserv
 	tests/data/pam/nss-passwd
 	tests/data/pam/nss-group
 	tests/Makefile
@@ -601,6 +621,7 @@ Summary of build options:
   libnl3:               ${have_libnl3}
   liboath:              ${have_liboath}
   libgeoip:             ${have_geoip}
+  libmaxminddb:         ${have_maxmind}
   glibc (sha2crypt):    ${have_glibc}
   local talloc:         ${with_local_talloc}
   local protobuf-c:     ${with_local_protobuf_c}

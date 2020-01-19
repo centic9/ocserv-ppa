@@ -29,9 +29,15 @@ EXTRA_DIST = certs/ca-key.pem certs/ca.pem ns.sh common.sh certs/server-cert.pem
 	data/haproxy-connect.cfg data/test-haproxy-connect.config scripts/vpnc-script \
 	data/test-traffic.config data/test-compression-lzs.config data/test-compression-lz4.config \
 	certs/crl.pem server-cert-rsa-pss data/test-gssapi-opt-cert.config data/test-ciphers.config \
-	cipher-common.sh data/config-per-group.config data/group-config/tost
+	cipher-common.sh data/config-per-group.config data/group-config/tost \
+	data/raddb/access_reject data/raddb/accounting_response data/raddb/access_challenge data/raddb/acct_users \
+	data/raddb/clients.conf data/raddb/radiusd.conf data/raddb/users \
+	data/radiusclient/dictionary data/radiusclient/radiusclient.conf \
+	data/radiusclient/servers data/radius.config data/radius-group.config data/radius-otp.config \
+	data/test-udp-listen-host.config data/pam-kerberos/passdb.templ \
+	data/test-max-same-1.config
 
-SUBDIRS = docker-ocserv docker-kerberos
+SUBDIRS = docker-ocserv
 
 xfail_scripts =
 dist_check_SCRIPTS =  ocpasswd-test
@@ -44,22 +50,24 @@ endif
 if ENABLE_ROOT_TESTS
 if ENABLE_DOCKER_TESTS
 #docker tests
-dist_check_SCRIPTS += radius-test unix-test kerberos-test radius-test-config \
+dist_check_SCRIPTS += unix-test \
 	proxyproto-test proxyproto-v1-test proxyproto-unix-test \
-	reload-info-test radius-group-test
+	reload-info-test
 endif
 
 #other root requiring tests
 dist_check_SCRIPTS += test-iroute test-multi-cookie test-pass-script \
 	test-cookie-timeout test-cookie-timeout-2 test-explicit-ip \
 	test-cookie-invalidation test-user-config test-append-routes test-ban \
-	multiple-routes haproxy-connect
+	multiple-routes haproxy-connect radius-group radius-otp json test-udp-listen-host \
+	test-max-same-1
 
 #other tests requiring nuttcp for traffic
 if ENABLE_NUTTCP_TESTS
 dist_check_SCRIPTS += traffic lz4-compression lzs-compression \
-	aes256-cipher aes128-cipher aes256-gcm-cipher aes128-gcm-cipher \
-	test-config-per-group
+	aes256-cipher aes128-cipher oc-aes256-gcm-cipher oc-aes128-gcm-cipher \
+	test-config-per-group ac-aes128-gcm-cipher ac-aes256-gcm-cipher \
+	no-dtls-cipher radius radius-config
 endif
 
 endif
@@ -78,6 +86,10 @@ dist_check_SCRIPTS += test-pass test-pass-cert test-cert test-group-pass \
 
 if HAVE_CWRAP_PAM
 dist_check_SCRIPTS += test-pam test-pam-noauth
+
+if ENABLE_KERBEROS_TESTS
+dist_check_SCRIPTS += kerberos
+endif
 endif
 
 if HAVE_LIBOATH

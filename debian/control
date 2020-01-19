@@ -27,6 +27,7 @@ Build-Depends: autogen (>= 5.18.6),
                pkg-config,
                protobuf-c-compiler,
 	       libgeoip-dev,
+	       libmaxminddb-dev,
 Standards-Version: 4.2.1
 Homepage: http://www.infradead.org/ocserv/
 VCS-Browser: https://salsa.debian.org/debian/ocserv

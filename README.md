@@ -1,5 +1,5 @@
-[![Build status](https://gitlab.com/ocserv/ocserv/badges/master/build.svg)](https://gitlab.com/ocserv/ocserv/commits/master)
-[![coverage report](https://gitlab.com/ocserv/ocserv/badges/master/coverage.svg)](https://ocserv.gitlab.io/ocserv/coverage/)
+[![Build status](https://gitlab.com/openconnect/ocserv/badges/master/pipeline.svg)](https://gitlab.com/openconnect/ocserv/commits/master)
+[![coverage report](https://gitlab.com/openconnect/ocserv/badges/master/coverage.svg)](https://openconnect.gitlab.io/ocserv/coverage/)
 
 # About
 
@@ -55,6 +55,9 @@ libsocket-wrapper  / socket_wrapper
 gss-ntlmssp        / gssntlmssp
 haproxy            / haproxy
 iputils-ping       / iputils
+freeradius	   / freeradius
+gawk		   / gawk
+yajl-tools	   / yajl
 ```
 
 See [README-radius](doc/README-radius.md) for more information on Radius
@@ -78,7 +81,7 @@ Note that the code coverage reported does not currently include tests which
 are run within docker.
 
 In addition to the prerequisites listed above, building from git requires
-the following packages: autoconf, automake, git2cl, and xz.
+the following packages: autoconf, automake, and xz.
 
 To build from the git repository use:
 ```
@@ -130,7 +133,7 @@ You may examine the output using:
 We utilize the gitlab-ci continuous integration system. It is used to test
 most of the Linux systems (see .gitlab-ci.yml),and is split in two phases,
 build image creation and compilation/test. The build image creation is done
-at the ocserv/build-images subproject and uploads the image at the gitlab.com
+at the openconnect/build-images subproject and uploads the image at the gitlab.com
 container registry. The compilation/test phase is on every commit to project.
 
 

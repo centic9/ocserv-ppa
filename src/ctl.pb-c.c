@@ -10,7 +10,7 @@
 void   status_rep__init
                      (StatusRep         *message)
 {
-  static StatusRep init_value = STATUS_REP__INIT;
+  static const StatusRep init_value = STATUS_REP__INIT;
   *message = init_value;
 }
 size_t status_rep__get_packed_size
@@ -47,13 +47,15 @@ void   status_rep__free_unpacked
                      (StatusRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &status_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   bool_msg__init
                      (BoolMsg         *message)
 {
-  static BoolMsg init_value = BOOL_MSG__INIT;
+  static const BoolMsg init_value = BOOL_MSG__INIT;
   *message = init_value;
 }
 size_t bool_msg__get_packed_size
@@ -90,13 +92,15 @@ void   bool_msg__free_unpacked
                      (BoolMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &bool_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   user_info_rep__init
                      (UserInfoRep         *message)
 {
-  static UserInfoRep init_value = USER_INFO_REP__INIT;
+  static const UserInfoRep init_value = USER_INFO_REP__INIT;
   *message = init_value;
 }
 size_t user_info_rep__get_packed_size
@@ -133,13 +137,15 @@ void   user_info_rep__free_unpacked
                      (UserInfoRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &user_info_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   user_list_rep__init
                      (UserListRep         *message)
 {
-  static UserListRep init_value = USER_LIST_REP__INIT;
+  static const UserListRep init_value = USER_LIST_REP__INIT;
   *message = init_value;
 }
 size_t user_list_rep__get_packed_size
@@ -176,13 +182,15 @@ void   user_list_rep__free_unpacked
                      (UserListRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &user_list_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   top_update_rep__init
                      (TopUpdateRep         *message)
 {
-  static TopUpdateRep init_value = TOP_UPDATE_REP__INIT;
+  static const TopUpdateRep init_value = TOP_UPDATE_REP__INIT;
   *message = init_value;
 }
 size_t top_update_rep__get_packed_size
@@ -219,13 +227,15 @@ void   top_update_rep__free_unpacked
                      (TopUpdateRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &top_update_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   username_req__init
                      (UsernameReq         *message)
 {
-  static UsernameReq init_value = USERNAME_REQ__INIT;
+  static const UsernameReq init_value = USERNAME_REQ__INIT;
   *message = init_value;
 }
 size_t username_req__get_packed_size
@@ -262,13 +272,15 @@ void   username_req__free_unpacked
                      (UsernameReq *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &username_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   id_req__init
                      (IdReq         *message)
 {
-  static IdReq init_value = ID_REQ__INIT;
+  static const IdReq init_value = ID_REQ__INIT;
   *message = init_value;
 }
 size_t id_req__get_packed_size
@@ -305,13 +317,15 @@ void   id_req__free_unpacked
                      (IdReq *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &id_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ban_info_rep__init
                      (BanInfoRep         *message)
 {
-  static BanInfoRep init_value = BAN_INFO_REP__INIT;
+  static const BanInfoRep init_value = BAN_INFO_REP__INIT;
   *message = init_value;
 }
 size_t ban_info_rep__get_packed_size
@@ -348,13 +362,15 @@ void   ban_info_rep__free_unpacked
                      (BanInfoRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &ban_info_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ban_list_rep__init
                      (BanListRep         *message)
 {
-  static BanListRep init_value = BAN_LIST_REP__INIT;
+  static const BanListRep init_value = BAN_LIST_REP__INIT;
   *message = init_value;
 }
 size_t ban_list_rep__get_packed_size
@@ -391,13 +407,15 @@ void   ban_list_rep__free_unpacked
                      (BanListRep *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &ban_list_rep__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   unban_req__init
                      (UnbanReq         *message)
 {
-  static UnbanReq init_value = UNBAN_REQ__INIT;
+  static const UnbanReq init_value = UNBAN_REQ__INIT;
   *message = init_value;
 }
 size_t unban_req__get_packed_size
@@ -434,6 +452,8 @@ void   unban_req__free_unpacked
                      (UnbanReq *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &unban_req__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }

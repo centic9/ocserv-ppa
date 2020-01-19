@@ -97,17 +97,19 @@ sbin_PROGRAMS = ocserv$(EXEEXT)
 @ENABLE_COMPRESSION_TRUE@am__append_4 = lzs.c lzs.h
 @HAVE_GSSAPI_TRUE@am__append_5 = kkdcp_asn1_tab.c kkdcp.asn
 bin_PROGRAMS = occtl/occtl$(EXEEXT) ocpasswd/ocpasswd$(EXEEXT)
-@LOCAL_TALLOC_TRUE@am__append_6 = ccan/talloc/talloc.c ccan/talloc/talloc.h ccan/compiler/compiler.h \
+@HAVE_MAXMIND_TRUE@am__append_6 = occtl/maxmind.c
+@HAVE_MAXMIND_FALSE@am__append_7 = occtl/geoip.c
+@LOCAL_TALLOC_TRUE@am__append_8 = ccan/talloc/talloc.c ccan/talloc/talloc.h ccan/compiler/compiler.h \
 @LOCAL_TALLOC_TRUE@	ccan/typesafe_cb/typesafe_cb.h
 
 
 # libpcl
-@PCL_TRUE@am__append_7 = $(PCL_LIBS)
-@PCL_FALSE@am__append_8 = libpcl.a
-@PCL_FALSE@am__append_9 = -I$(srcdir)/pcl/
+@PCL_TRUE@am__append_9 = $(PCL_LIBS)
 @PCL_FALSE@am__append_10 = libpcl.a
-@LOCAL_PROTOBUF_C_TRUE@am__append_11 = libprotobuf.a
-@LOCAL_PROTOBUF_C_TRUE@am__append_12 = -I$(srcdir)/protobuf/
+@PCL_FALSE@am__append_11 = -I$(srcdir)/pcl/
+@PCL_FALSE@am__append_12 = libpcl.a
+@LOCAL_PROTOBUF_C_TRUE@am__append_13 = libprotobuf.a
+@LOCAL_PROTOBUF_C_TRUE@am__append_14 = -I$(srcdir)/protobuf/
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/gl/m4/00gnulib.m4 \
@@ -204,13 +206,20 @@ am__libprotobuf_a_SOURCES_DIST = protobuf/protobuf-c/protobuf-c.c \
 	protobuf/protobuf-c/protobuf-c.h
 @LOCAL_PROTOBUF_C_TRUE@am_libprotobuf_a_OBJECTS = protobuf/protobuf-c/libprotobuf_a-protobuf-c.$(OBJEXT)
 libprotobuf_a_OBJECTS = $(am_libprotobuf_a_OBJECTS)
+am__occtl_occtl_SOURCES_DIST = occtl/occtl.c occtl/pager.c \
+	occtl/occtl.h occtl/time.c occtl/cache.c occtl/ip-cache.c \
+	occtl/nl.c occtl/ctl.h occtl/print.c occtl/json.c occtl/json.h \
+	occtl/hex.c occtl/hex.h occtl/unix.c occtl/geoip.h \
+	occtl/session-cache.c occtl/maxmind.c occtl/geoip.c
+@HAVE_MAXMIND_TRUE@am__objects_2 = occtl/occtl-maxmind.$(OBJEXT)
+@HAVE_MAXMIND_FALSE@am__objects_3 = occtl/occtl-geoip.$(OBJEXT)
 am_occtl_occtl_OBJECTS = occtl/occtl-occtl.$(OBJEXT) \
 	occtl/occtl-pager.$(OBJEXT) occtl/occtl-time.$(OBJEXT) \
 	occtl/occtl-cache.$(OBJEXT) occtl/occtl-ip-cache.$(OBJEXT) \
 	occtl/occtl-nl.$(OBJEXT) occtl/occtl-print.$(OBJEXT) \
 	occtl/occtl-json.$(OBJEXT) occtl/occtl-hex.$(OBJEXT) \
-	occtl/occtl-unix.$(OBJEXT) occtl/occtl-geoip.$(OBJEXT) \
-	occtl/occtl-session-cache.$(OBJEXT)
+	occtl/occtl-unix.$(OBJEXT) occtl/occtl-session-cache.$(OBJEXT) \
+	$(am__objects_2) $(am__objects_3)
 occtl_occtl_OBJECTS = $(am_occtl_occtl_OBJECTS)
 am__DEPENDENCIES_1 =
 @LOCAL_PROTOBUF_C_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
@@ -219,7 +228,8 @@ occtl_occtl_DEPENDENCIES = ../gl/libgnu.a libcommon.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) libccan.a libipc.a \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_ocpasswd_ocpasswd_OBJECTS = ocpasswd/ocpasswd-ocpasswd.$(OBJEXT)
 ocpasswd_ocpasswd_OBJECTS = $(am_ocpasswd_ocpasswd_OBJECTS)
 ocpasswd_ocpasswd_DEPENDENCIES = ../gl/libgnu.a $(am__DEPENDENCIES_1) \
@@ -248,14 +258,14 @@ am__ocserv_SOURCES_DIST = main.c main-auth.c worker-vpn.c \
 	sec-mod-acct.h setproctitle.c setproctitle.h sec-mod-resume.h \
 	sec-mod-cookies.c defs.h inih/ini.c inih/ini.h lzs.c lzs.h \
 	kkdcp_asn1_tab.c kkdcp.asn main-ctl-unix.c
-am__objects_2 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
+am__objects_4 = auth/pam.$(OBJEXT) auth/plain.$(OBJEXT) \
 	auth/radius.$(OBJEXT) auth/common.$(OBJEXT) \
 	auth/gssapi.$(OBJEXT) auth-unix.$(OBJEXT)
-am__objects_3 = acct/radius.$(OBJEXT) acct/pam.$(OBJEXT)
-@LOCAL_HTTP_PARSER_TRUE@am__objects_4 =  \
+am__objects_5 = acct/radius.$(OBJEXT) acct/pam.$(OBJEXT)
+@LOCAL_HTTP_PARSER_TRUE@am__objects_6 =  \
 @LOCAL_HTTP_PARSER_TRUE@	http-parser/http_parser.$(OBJEXT)
-@ENABLE_COMPRESSION_TRUE@am__objects_5 = lzs.$(OBJEXT)
-@HAVE_GSSAPI_TRUE@am__objects_6 = kkdcp_asn1_tab.$(OBJEXT)
+@ENABLE_COMPRESSION_TRUE@am__objects_7 = lzs.$(OBJEXT)
+@HAVE_GSSAPI_TRUE@am__objects_8 = kkdcp_asn1_tab.$(OBJEXT)
 am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
 	worker-vpn.$(OBJEXT) worker-auth.$(OBJEXT) tlslib.$(OBJEXT) \
 	main-worker-cmd.$(OBJEXT) ip-lease.$(OBJEXT) \
@@ -266,16 +276,16 @@ am_ocserv_OBJECTS = main.$(OBJEXT) main-auth.$(OBJEXT) \
 	worker-http.$(OBJEXT) main-user.$(OBJEXT) \
 	worker-misc.$(OBJEXT) route-add.$(OBJEXT) \
 	worker-privs.$(OBJEXT) sec-mod.$(OBJEXT) sec-mod-db.$(OBJEXT) \
-	sec-mod-auth.$(OBJEXT) $(am__objects_2) $(am__objects_3) \
+	sec-mod-auth.$(OBJEXT) $(am__objects_4) $(am__objects_5) \
 	icmp-ping.$(OBJEXT) worker-kkdcp.$(OBJEXT) subconfig.$(OBJEXT) \
 	sec-mod-sup-config.$(OBJEXT) sup-config/file.$(OBJEXT) \
 	main-sec-mod-cmd.$(OBJEXT) sup-config/radius.$(OBJEXT) \
 	worker-bandwidth.$(OBJEXT) vasprintf.$(OBJEXT) \
 	worker-proxyproto.$(OBJEXT) config-ports.$(OBJEXT) \
 	proc-search.$(OBJEXT) ip-util.$(OBJEXT) main-ban.$(OBJEXT) \
-	valid-hostname.$(OBJEXT) str.$(OBJEXT) $(am__objects_4) \
+	valid-hostname.$(OBJEXT) str.$(OBJEXT) $(am__objects_6) \
 	setproctitle.$(OBJEXT) sec-mod-cookies.$(OBJEXT) \
-	inih/ini.$(OBJEXT) $(am__objects_5) $(am__objects_6) \
+	inih/ini.$(OBJEXT) $(am__objects_7) $(am__objects_8) \
 	main-ctl-unix.$(OBJEXT)
 ocserv_OBJECTS = $(am_ocserv_OBJECTS)
 @LOCAL_HTTP_PARSER_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
@@ -290,7 +300,7 @@ ocserv_DEPENDENCIES = ../gl/libgnu.a libccan.a libcommon.a \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libipc.a $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_4) $(am__append_8)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_4) $(am__append_10)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -372,9 +382,9 @@ am__depfiles_remade = ./$(DEPDIR)/auth-unix.Po \
 	http-parser/$(DEPDIR)/http_parser.Po inih/$(DEPDIR)/ini.Po \
 	occtl/$(DEPDIR)/occtl-cache.Po occtl/$(DEPDIR)/occtl-geoip.Po \
 	occtl/$(DEPDIR)/occtl-hex.Po occtl/$(DEPDIR)/occtl-ip-cache.Po \
-	occtl/$(DEPDIR)/occtl-json.Po occtl/$(DEPDIR)/occtl-nl.Po \
-	occtl/$(DEPDIR)/occtl-occtl.Po occtl/$(DEPDIR)/occtl-pager.Po \
-	occtl/$(DEPDIR)/occtl-print.Po \
+	occtl/$(DEPDIR)/occtl-json.Po occtl/$(DEPDIR)/occtl-maxmind.Po \
+	occtl/$(DEPDIR)/occtl-nl.Po occtl/$(DEPDIR)/occtl-occtl.Po \
+	occtl/$(DEPDIR)/occtl-pager.Po occtl/$(DEPDIR)/occtl-print.Po \
 	occtl/$(DEPDIR)/occtl-session-cache.Po \
 	occtl/$(DEPDIR)/occtl-time.Po occtl/$(DEPDIR)/occtl-unix.Po \
 	ocpasswd/$(DEPDIR)/ocpasswd-ocpasswd.Po \
@@ -406,8 +416,9 @@ SOURCES = $(libccan_a_SOURCES) $(libcommon_a_SOURCES) \
 	$(ocpasswd_ocpasswd_SOURCES) $(ocserv_SOURCES)
 DIST_SOURCES = $(am__libccan_a_SOURCES_DIST) $(libcommon_a_SOURCES) \
 	$(libipc_a_SOURCES) $(am__libpcl_a_SOURCES_DIST) \
-	$(am__libprotobuf_a_SOURCES_DIST) $(occtl_occtl_SOURCES) \
-	$(ocpasswd_ocpasswd_SOURCES) $(am__ocserv_SOURCES_DIST)
+	$(am__libprotobuf_a_SOURCES_DIST) \
+	$(am__occtl_occtl_SOURCES_DIST) $(ocpasswd_ocpasswd_SOURCES) \
+	$(am__ocserv_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -432,7 +443,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/common.mk \
-	$(srcdir)/version.inc.in $(top_srcdir)/build-aux/depcomp TODO
+	$(srcdir)/version.inc.in $(top_srcdir)/build-aux/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -908,6 +919,8 @@ LTLIBUTIL = @LTLIBUTIL@
 LTLIBWRAP = @LTLIBWRAP@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MAXMIND_CFLAGS = @MAXMIND_CFLAGS@
+MAXMIND_LIBS = @MAXMIND_LIBS@
 MKDIR_P = @MKDIR_P@
 NEXT_AS_FIRST_DIRECTIVE_ERRNO_H = @NEXT_AS_FIRST_DIRECTIVE_ERRNO_H@
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H = @NEXT_AS_FIRST_DIRECTIVE_STDDEF_H@
@@ -1141,7 +1154,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1157,8 +1169,8 @@ AM_CPPFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
 	$(LIBPROTOBUF_C_CFLAGS) $(LIBLZ4_CFLAGS) $(LIBREADLINE_CFLAGS) \
 	$(CODE_COVERAGE_CFLAGS) $(LIBTALLOC_CFLAGS) $(LIBDBUS_CFLAGS) \
 	$(LIBOATH_CFLAGS) $(LIBKRB5_CFLAGS) $(LIBTASN1_CFLAGS) \
-	$(RADCLI_CFLAGS) $(SRC_CFLAGS) $(am__append_9) \
-	$(am__append_12)
+	$(RADCLI_CFLAGS) $(SRC_CFLAGS) $(am__append_11) \
+	$(am__append_14)
 @LOCAL_HTTP_PARSER_FALSE@NEEDED_HTTP_PARSER_LIBS = $(HTTP_PARSER_LIBS)
 @LOCAL_HTTP_PARSER_TRUE@NEEDED_HTTP_PARSER_LIBS = 
 @LOCAL_PROTOBUF_C_FALSE@NEEDED_LIBPROTOBUF_LIBS = $(LIBPROTOBUF_C_LIBS)
@@ -1172,8 +1184,8 @@ EXTRA_DIST = version.inc.in version.inc ipc.proto ctl.proto \
 	http-heads.gperf common.mk ocserv-fw ccan/licenses/BSD-MIT \
 	ccan/licenses/CC0 ccan/licenses/LGPL-2.1
 bin_SCRIPTS = ocserv-fw
-noinst_LIBRARIES = libipc.a libcommon.a libccan.a $(am__append_10) \
-	$(am__append_11)
+noinst_LIBRARIES = libipc.a libcommon.a libccan.a $(am__append_12) \
+	$(am__append_13)
 
 # Authentication module sources
 AUTH_SOURCES = auth/pam.c auth/pam.h auth/plain.c auth/plain.h auth/radius.c auth/radius.h \
@@ -1208,18 +1220,18 @@ ocserv_LDADD = ../gl/libgnu.a libccan.a libcommon.a $(LIBGNUTLS_LIBS) \
 	$(LIBKRB5_LIBS) $(LIBTASN1_LIBS) $(LIBOATH_LIBS) \
 	$(LIBNETTLE_LIBS) $(LIBEV_LIBS) libipc.a \
 	$(NEEDED_LIBPROTOBUF_LIBS) $(CODE_COVERAGE_LDFLAGS) \
-	$(am__append_7) $(am__append_8)
+	$(am__append_9) $(am__append_10)
 libipc_a_SOURCES = ctl.pb-c.c ctl.pb-c.h ipc.pb-c.h ipc.pb-c.c
-occtl_occtl_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/occtl $(LIBNL3_CFLAGS) $(GEOIP_CFLAGS)
-occtl_occtl_SOURCES = occtl/occtl.c occtl/pager.c occtl/occtl.h occtl/time.c occtl/cache.c \
-	occtl/ip-cache.c occtl/nl.c occtl/ctl.h occtl/print.c occtl/json.c occtl/json.h \
-	occtl/hex.c occtl/hex.h occtl/unix.c occtl/geoip.c occtl/geoip.h \
-	occtl/session-cache.c
-
+occtl_occtl_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/occtl $(LIBNL3_CFLAGS) $(GEOIP_CFLAGS) $(MAXMIND_CFLAGS)
+occtl_occtl_SOURCES = occtl/occtl.c occtl/pager.c occtl/occtl.h \
+	occtl/time.c occtl/cache.c occtl/ip-cache.c occtl/nl.c \
+	occtl/ctl.h occtl/print.c occtl/json.c occtl/json.h \
+	occtl/hex.c occtl/hex.h occtl/unix.c occtl/geoip.h \
+	occtl/session-cache.c $(am__append_6) $(am__append_7)
 occtl_occtl_LDADD = ../gl/libgnu.a libcommon.a $(LIBREADLINE_LIBS) \
 	$(LIBNL3_LIBS) $(NEEDED_LIBPROTOBUF_LIBS) $(LIBTALLOC_LIBS) libccan.a \
 	libipc.a $(NEEDED_LIBPROTOBUF_LIBS) $(CODE_COVERAGE_LDFLAGS) \
-	$(LIBNETTLE_LIBS) $(GEOIP_LIBS)
+	$(LIBNETTLE_LIBS) $(MAXMIND_LIBS) $(GEOIP_LIBS)
 
 ocpasswd_ocpasswd_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/ocpasswd
 ocpasswd_ocpasswd_SOURCES = ocpasswd/ocpasswd.c
@@ -1238,7 +1250,7 @@ libccan_a_SOURCES = ccan/build_assert/build_assert.h \
 	ccan/check_type/check_type.h ccan/container_of/container_of.h \
 	ccan/hash/hash.c ccan/hash/hash.h ccan/htable/htable.c \
 	ccan/htable/htable.h ccan/htable/htable_type.h \
-	ccan/list/list.c ccan/list/list.h $(am__append_6)
+	ccan/list/list.c ccan/list/list.h $(am__append_8)
 @PCL_FALSE@libpcl_a_CPPFLAGS = -I$(srcdir)/pcl -I$(builddir)/../
 @PCL_FALSE@libpcl_a_SOURCES = pcl/pcl.c pcl/pcl_version.c pcl/pcl_private.c \
 @PCL_FALSE@	pcl/pcl_config.h pcl/pcl.h pcl/pcl_private.h
@@ -1259,9 +1271,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/co
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/Makefile
+	  $(AUTOMAKE) --foreign src/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -1487,9 +1499,11 @@ occtl/occtl-hex.$(OBJEXT): occtl/$(am__dirstamp) \
 	occtl/$(DEPDIR)/$(am__dirstamp)
 occtl/occtl-unix.$(OBJEXT): occtl/$(am__dirstamp) \
 	occtl/$(DEPDIR)/$(am__dirstamp)
-occtl/occtl-geoip.$(OBJEXT): occtl/$(am__dirstamp) \
-	occtl/$(DEPDIR)/$(am__dirstamp)
 occtl/occtl-session-cache.$(OBJEXT): occtl/$(am__dirstamp) \
+	occtl/$(DEPDIR)/$(am__dirstamp)
+occtl/occtl-maxmind.$(OBJEXT): occtl/$(am__dirstamp) \
+	occtl/$(DEPDIR)/$(am__dirstamp)
+occtl/occtl-geoip.$(OBJEXT): occtl/$(am__dirstamp) \
 	occtl/$(DEPDIR)/$(am__dirstamp)
 
 occtl/occtl$(EXEEXT): $(occtl_occtl_OBJECTS) $(occtl_occtl_DEPENDENCIES) $(EXTRA_occtl_occtl_DEPENDENCIES) occtl/$(am__dirstamp)
@@ -1687,6 +1701,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-hex.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-ip-cache.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-json.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-maxmind.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-nl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-occtl.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@occtl/$(DEPDIR)/occtl-pager.Po@am__quote@ # am--include-marker
@@ -2032,20 +2047,6 @@ occtl/occtl-unix.obj: occtl/unix.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-unix.obj `if test -f 'occtl/unix.c'; then $(CYGPATH_W) 'occtl/unix.c'; else $(CYGPATH_W) '$(srcdir)/occtl/unix.c'; fi`
 
-occtl/occtl-geoip.o: occtl/geoip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-geoip.o -MD -MP -MF occtl/$(DEPDIR)/occtl-geoip.Tpo -c -o occtl/occtl-geoip.o `test -f 'occtl/geoip.c' || echo '$(srcdir)/'`occtl/geoip.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-geoip.Tpo occtl/$(DEPDIR)/occtl-geoip.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/geoip.c' object='occtl/occtl-geoip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-geoip.o `test -f 'occtl/geoip.c' || echo '$(srcdir)/'`occtl/geoip.c
-
-occtl/occtl-geoip.obj: occtl/geoip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-geoip.obj -MD -MP -MF occtl/$(DEPDIR)/occtl-geoip.Tpo -c -o occtl/occtl-geoip.obj `if test -f 'occtl/geoip.c'; then $(CYGPATH_W) 'occtl/geoip.c'; else $(CYGPATH_W) '$(srcdir)/occtl/geoip.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-geoip.Tpo occtl/$(DEPDIR)/occtl-geoip.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/geoip.c' object='occtl/occtl-geoip.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-geoip.obj `if test -f 'occtl/geoip.c'; then $(CYGPATH_W) 'occtl/geoip.c'; else $(CYGPATH_W) '$(srcdir)/occtl/geoip.c'; fi`
-
 occtl/occtl-session-cache.o: occtl/session-cache.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-session-cache.o -MD -MP -MF occtl/$(DEPDIR)/occtl-session-cache.Tpo -c -o occtl/occtl-session-cache.o `test -f 'occtl/session-cache.c' || echo '$(srcdir)/'`occtl/session-cache.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-session-cache.Tpo occtl/$(DEPDIR)/occtl-session-cache.Po
@@ -2059,6 +2060,34 @@ occtl/occtl-session-cache.obj: occtl/session-cache.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/session-cache.c' object='occtl/occtl-session-cache.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-session-cache.obj `if test -f 'occtl/session-cache.c'; then $(CYGPATH_W) 'occtl/session-cache.c'; else $(CYGPATH_W) '$(srcdir)/occtl/session-cache.c'; fi`
+
+occtl/occtl-maxmind.o: occtl/maxmind.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-maxmind.o -MD -MP -MF occtl/$(DEPDIR)/occtl-maxmind.Tpo -c -o occtl/occtl-maxmind.o `test -f 'occtl/maxmind.c' || echo '$(srcdir)/'`occtl/maxmind.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-maxmind.Tpo occtl/$(DEPDIR)/occtl-maxmind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/maxmind.c' object='occtl/occtl-maxmind.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-maxmind.o `test -f 'occtl/maxmind.c' || echo '$(srcdir)/'`occtl/maxmind.c
+
+occtl/occtl-maxmind.obj: occtl/maxmind.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-maxmind.obj -MD -MP -MF occtl/$(DEPDIR)/occtl-maxmind.Tpo -c -o occtl/occtl-maxmind.obj `if test -f 'occtl/maxmind.c'; then $(CYGPATH_W) 'occtl/maxmind.c'; else $(CYGPATH_W) '$(srcdir)/occtl/maxmind.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-maxmind.Tpo occtl/$(DEPDIR)/occtl-maxmind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/maxmind.c' object='occtl/occtl-maxmind.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-maxmind.obj `if test -f 'occtl/maxmind.c'; then $(CYGPATH_W) 'occtl/maxmind.c'; else $(CYGPATH_W) '$(srcdir)/occtl/maxmind.c'; fi`
+
+occtl/occtl-geoip.o: occtl/geoip.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-geoip.o -MD -MP -MF occtl/$(DEPDIR)/occtl-geoip.Tpo -c -o occtl/occtl-geoip.o `test -f 'occtl/geoip.c' || echo '$(srcdir)/'`occtl/geoip.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-geoip.Tpo occtl/$(DEPDIR)/occtl-geoip.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/geoip.c' object='occtl/occtl-geoip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-geoip.o `test -f 'occtl/geoip.c' || echo '$(srcdir)/'`occtl/geoip.c
+
+occtl/occtl-geoip.obj: occtl/geoip.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT occtl/occtl-geoip.obj -MD -MP -MF occtl/$(DEPDIR)/occtl-geoip.Tpo -c -o occtl/occtl-geoip.obj `if test -f 'occtl/geoip.c'; then $(CYGPATH_W) 'occtl/geoip.c'; else $(CYGPATH_W) '$(srcdir)/occtl/geoip.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) occtl/$(DEPDIR)/occtl-geoip.Tpo occtl/$(DEPDIR)/occtl-geoip.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='occtl/geoip.c' object='occtl/occtl-geoip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(occtl_occtl_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o occtl/occtl-geoip.obj `if test -f 'occtl/geoip.c'; then $(CYGPATH_W) 'occtl/geoip.c'; else $(CYGPATH_W) '$(srcdir)/occtl/geoip.c'; fi`
 
 ocpasswd/ocpasswd-ocpasswd.o: ocpasswd/ocpasswd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ocpasswd_ocpasswd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ocpasswd/ocpasswd-ocpasswd.o -MD -MP -MF ocpasswd/$(DEPDIR)/ocpasswd-ocpasswd.Tpo -c -o ocpasswd/ocpasswd-ocpasswd.o `test -f 'ocpasswd/ocpasswd.c' || echo '$(srcdir)/'`ocpasswd/ocpasswd.c
@@ -2301,6 +2330,7 @@ distclean: distclean-am
 	-rm -f occtl/$(DEPDIR)/occtl-hex.Po
 	-rm -f occtl/$(DEPDIR)/occtl-ip-cache.Po
 	-rm -f occtl/$(DEPDIR)/occtl-json.Po
+	-rm -f occtl/$(DEPDIR)/occtl-maxmind.Po
 	-rm -f occtl/$(DEPDIR)/occtl-nl.Po
 	-rm -f occtl/$(DEPDIR)/occtl-occtl.Po
 	-rm -f occtl/$(DEPDIR)/occtl-pager.Po
@@ -2429,6 +2459,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f occtl/$(DEPDIR)/occtl-hex.Po
 	-rm -f occtl/$(DEPDIR)/occtl-ip-cache.Po
 	-rm -f occtl/$(DEPDIR)/occtl-json.Po
+	-rm -f occtl/$(DEPDIR)/occtl-maxmind.Po
 	-rm -f occtl/$(DEPDIR)/occtl-nl.Po
 	-rm -f occtl/$(DEPDIR)/occtl-occtl.Po
 	-rm -f occtl/$(DEPDIR)/occtl-pager.Po
