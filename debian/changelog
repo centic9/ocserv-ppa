@@ -25,6 +25,12 @@ ocserv (0.12.2-3) unstable; urgency=medium
 
  -- Aron Xu <aron@debian.org>  Sat, 13 Apr 2019 15:00:59 +0800
 
+ocserv (0.12.2-2~bpo9+1ubuntu0~ppa1) bionic; urgency=medium
+
+  * Backport to bionic
+
+ -- Dominik Stadler (Ubuntu key) <dominik.stadler@gmx.at>  Sat, 23 Mar 2019 07:02:13 +0100
+
 ocserv (0.12.2-2) unstable; urgency=medium
 
   * d/patches: upstream patch for AC-DTLS12 and stability with
