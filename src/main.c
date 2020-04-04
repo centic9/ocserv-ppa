@@ -419,7 +419,7 @@ listen_ports(void *pool, struct perm_cfg_st* config,
 #endif
 		    ;
 
-		ret = getaddrinfo(config->listen_host, portname, &hints, &res);
+		ret = getaddrinfo(config->udp_listen_host, portname, &hints, &res);
 		if (ret != 0) {
 			fprintf(stderr, "getaddrinfo() failed: %s\n",
 				gai_strerror(ret));
@@ -566,29 +566,6 @@ static void drop_privileges(main_server_st* s)
 		mslog(s, NULL, LOG_ERR, "cannot enforce NPROC limit: %s\n",
 		       strerror(e));
 	}
-
-#if 0
-	rl.rlim_cur = 0;
-	rl.rlim_max = 0;
-	ret = setrlimit(RLIMIT_FSIZE, &rl);
-	if (ret < 0) {
-		e = errno;
-		mslog(s, NULL, LOG_ERR, "cannot enforce FSIZE limit: %s\n",
-		       strerror(e));
-	}
-
-#define MAX_WORKER_MEM (16*1024*1024)
-	if (GETPCONFIG(s)->debug == 0) {
-		rl.rlim_cur = MAX_WORKER_MEM;
-		rl.rlim_max = MAX_WORKER_MEM;
-		ret = setrlimit(RLIMIT_AS, &rl);
-		if (ret < 0) {
-			e = errno;
-			mslog(s, NULL, LOG_ERR, "cannot enforce AS limit: %s\n",
-			       strerror(e));
-		}
-	}
-#endif
 }
 
 /* clears the server listen_list and proc_list. To be used after fork().
@@ -1351,6 +1328,9 @@ int main(int argc, char** argv)
 			exit(1);
 		}
 	}
+
+	/* create our process group */
+	setpgid(0, 0);
 
 	/* we don't need them */
 	close(STDIN_FILENO);

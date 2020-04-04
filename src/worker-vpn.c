@@ -226,18 +226,18 @@ static int setup_dtls_psk_keys(gnutls_session_t session, struct worker_st *ws)
 
 	gnutls_psk_set_server_credentials_function(WSCREDS(ws)->pskcred, get_psk_key);
 
-	if (ws->session && WSCONFIG(ws)->match_dtls_and_tls) {
+	if (!ws->session) {
+		oclog(ws, LOG_ERR, "cannot setup PSK keys without an encrypted CSTP channel");
+		return -1;
+	}
+
+	if (WSCONFIG(ws)->match_dtls_and_tls) {
 		cipher = gnutls_cipher_get(ws->session);
 		mac = gnutls_mac_get(ws->session);
 
 		snprintf(prio_string, sizeof(prio_string), "%s:"VERS_STRING":-CIPHER-ALL:-MAC-ALL:-KX-ALL:+PSK:+VERS-DTLS-ALL:+%s:+%s",
 			 WSCONFIG(ws)->priorities, gnutls_mac_get_name(mac), gnutls_cipher_get_name(cipher));
 	} else {
-		if (WSCONFIG(ws)->match_dtls_and_tls) {
-			oclog(ws, LOG_ERR, "cannot determine ciphersuite from CSTP channel (unset match-tls-dtls-ciphers)");
-			return -1;
-		}
-
 		/* if we haven't an associated session, enable all ciphers we would have enabled
 		 * otherwise for TLS. */
 		snprintf(prio_string, sizeof(prio_string), "%s:"VERS_STRING":-KX-ALL:+PSK:+VERS-DTLS-ALL",
@@ -801,6 +801,8 @@ void vpn_server(struct worker_st *ws)
 		oclog(ws, LOG_DEBUG, "Accepted unix connection");
 	}
 
+	ws->session = session;
+
 	session_info_send(ws);
 
 	memset(&settings, 0, sizeof(settings));
@@ -823,7 +825,6 @@ void vpn_server(struct worker_st *ws)
 		oclog(ws, LOG_DEBUG, "proxy-hdr: peer is %s\n", ws->remote_ip_str);
 	}
 
-	ws->session = session;
 	ws->parser = &parser;
 
  restart:
@@ -1751,7 +1752,7 @@ static void calc_mtu_values(worker_st * ws)
 						gnutls_cipher_get(ws->session),
 						gnutls_mac_get(ws->session));
 			}
-		} else {
+		} else if (ws->req.selected_ciphersuite) {
 			ws->dtls_crypto_overhead =
 			    tls_get_overhead(ws->req.
 					     selected_ciphersuite->gnutls_version,
@@ -1972,9 +1973,9 @@ static int connect_handler(worker_st * ws)
 	if (ws->full_ipv6 == 0) {
 		req->no_ipv6 = 1;
 		oclog(ws, LOG_INFO, "IPv6 routes/DNS disabled because IPv6 support was not requested.");
-	} else if (req->user_agent_type != AGENT_OPENCONNECT) {
+	} else if (req->user_agent_type != AGENT_OPENCONNECT && req->user_agent_type != AGENT_ANYCONNECT) {
 		req->no_ipv6 = 1;
-		oclog(ws, LOG_INFO, "IPv6 routes/DNS disabled because the agent is not openconnect.");
+		oclog(ws, LOG_INFO, "IPv6 routes/DNS disabled because the agent is not known.");
 	}
 
 	for (i = 0; i < ws->user_config->n_dns; i++) {
@@ -1989,9 +1990,18 @@ static int connect_handler(worker_st * ws)
 			continue;
 
 		oclog(ws, LOG_INFO, "adding DNS %s", ws->user_config->dns[i]);
-		ret =
-		    cstp_printf(ws, "X-CSTP-DNS: %s\r\n",
-			       ws->user_config->dns[i]);
+		if (req->user_agent_type == AGENT_ANYCONNECT) {
+			ret =
+			    cstp_printf(ws, "X-CSTP-%s: %s\r\n",
+				       ip6 ? "DNS-IP6" : "DNS",
+				       ws->user_config->dns[i]);
+		} else { /* openconnect does not require the split
+			  * of DNS and DNS-IP6 and only recent versions
+			  * understand the IP6 variant. */
+			ret =
+			    cstp_printf(ws, "X-CSTP-DNS: %s\r\n",
+				        ws->user_config->dns[i]);
+		}
 		SEND_ERR(ret);
 	}
 
@@ -2013,8 +2023,8 @@ static int connect_handler(worker_st * ws)
 		SEND_ERR(ret);
 	}
 
-	for (i = 0; i < WSCONFIG(ws)->split_dns_size; i++) {
-		if (strchr(WSCONFIG(ws)->split_dns[i], ':') != 0)
+	for (i = 0; i < ws->user_config->n_split_dns; i++) {
+		if (strchr(ws->user_config->split_dns[i], ':') != 0)
 			ip6 = 1;
 		else
 			ip6 = 0;
@@ -2025,10 +2035,10 @@ static int connect_handler(worker_st * ws)
 			continue;
 
 		oclog(ws, LOG_INFO, "adding split DNS %s",
-		      WSCONFIG(ws)->split_dns[i]);
+		      ws->user_config->split_dns[i]);
 		ret =
 		    cstp_printf(ws, "X-CSTP-Split-DNS: %s\r\n",
-			       WSCONFIG(ws)->split_dns[i]);
+			       ws->user_config->split_dns[i]);
 		SEND_ERR(ret);
 	}
 
@@ -2199,7 +2209,7 @@ static int connect_handler(worker_st * ws)
 			oclog(ws, LOG_INFO, "DTLS ciphersuite: "DTLS_PROTO_INDICATOR);
 			ret =
 			    cstp_printf(ws, "X-DTLS-CipherSuite: "DTLS_PROTO_INDICATOR"\r\n");
-		} else {
+		} else if (ws->req.selected_ciphersuite) {
 			ret =
 			    cstp_printf(ws, "X-DTLS-Session-ID: %s\r\n",
 				       ws->buffer);

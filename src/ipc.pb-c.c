@@ -10,7 +10,7 @@
 void   auth_cookie_request_msg__init
                      (AuthCookieRequestMsg         *message)
 {
-  static AuthCookieRequestMsg init_value = AUTH_COOKIE_REQUEST_MSG__INIT;
+  static const AuthCookieRequestMsg init_value = AUTH_COOKIE_REQUEST_MSG__INIT;
   *message = init_value;
 }
 size_t auth_cookie_request_msg__get_packed_size
@@ -47,13 +47,15 @@ void   auth_cookie_request_msg__free_unpacked
                      (AuthCookieRequestMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &auth_cookie_request_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   fw_port_st__init
                      (FwPortSt         *message)
 {
-  static FwPortSt init_value = FW_PORT_ST__INIT;
+  static const FwPortSt init_value = FW_PORT_ST__INIT;
   *message = init_value;
 }
 size_t fw_port_st__get_packed_size
@@ -90,13 +92,15 @@ void   fw_port_st__free_unpacked
                      (FwPortSt *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &fw_port_st__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   group_cfg_st__init
                      (GroupCfgSt         *message)
 {
-  static GroupCfgSt init_value = GROUP_CFG_ST__INIT;
+  static const GroupCfgSt init_value = GROUP_CFG_ST__INIT;
   *message = init_value;
 }
 size_t group_cfg_st__get_packed_size
@@ -133,13 +137,15 @@ void   group_cfg_st__free_unpacked
                      (GroupCfgSt *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &group_cfg_st__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   auth_cookie_reply_msg__init
                      (AuthCookieReplyMsg         *message)
 {
-  static AuthCookieReplyMsg init_value = AUTH_COOKIE_REPLY_MSG__INIT;
+  static const AuthCookieReplyMsg init_value = AUTH_COOKIE_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t auth_cookie_reply_msg__get_packed_size
@@ -176,13 +182,15 @@ void   auth_cookie_reply_msg__free_unpacked
                      (AuthCookieReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &auth_cookie_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   session_resume_fetch_msg__init
                      (SessionResumeFetchMsg         *message)
 {
-  static SessionResumeFetchMsg init_value = SESSION_RESUME_FETCH_MSG__INIT;
+  static const SessionResumeFetchMsg init_value = SESSION_RESUME_FETCH_MSG__INIT;
   *message = init_value;
 }
 size_t session_resume_fetch_msg__get_packed_size
@@ -219,13 +227,15 @@ void   session_resume_fetch_msg__free_unpacked
                      (SessionResumeFetchMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &session_resume_fetch_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   session_resume_store_req_msg__init
                      (SessionResumeStoreReqMsg         *message)
 {
-  static SessionResumeStoreReqMsg init_value = SESSION_RESUME_STORE_REQ_MSG__INIT;
+  static const SessionResumeStoreReqMsg init_value = SESSION_RESUME_STORE_REQ_MSG__INIT;
   *message = init_value;
 }
 size_t session_resume_store_req_msg__get_packed_size
@@ -262,13 +272,15 @@ void   session_resume_store_req_msg__free_unpacked
                      (SessionResumeStoreReqMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &session_resume_store_req_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   session_resume_reply_msg__init
                      (SessionResumeReplyMsg         *message)
 {
-  static SessionResumeReplyMsg init_value = SESSION_RESUME_REPLY_MSG__INIT;
+  static const SessionResumeReplyMsg init_value = SESSION_RESUME_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t session_resume_reply_msg__get_packed_size
@@ -305,13 +317,15 @@ void   session_resume_reply_msg__free_unpacked
                      (SessionResumeReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &session_resume_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   tun_mtu_msg__init
                      (TunMtuMsg         *message)
 {
-  static TunMtuMsg init_value = TUN_MTU_MSG__INIT;
+  static const TunMtuMsg init_value = TUN_MTU_MSG__INIT;
   *message = init_value;
 }
 size_t tun_mtu_msg__get_packed_size
@@ -348,13 +362,15 @@ void   tun_mtu_msg__free_unpacked
                      (TunMtuMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &tun_mtu_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   cli_stats_msg__init
                      (CliStatsMsg         *message)
 {
-  static CliStatsMsg init_value = CLI_STATS_MSG__INIT;
+  static const CliStatsMsg init_value = CLI_STATS_MSG__INIT;
   *message = init_value;
 }
 size_t cli_stats_msg__get_packed_size
@@ -391,13 +407,15 @@ void   cli_stats_msg__free_unpacked
                      (CliStatsMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &cli_stats_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   udp_fd_msg__init
                      (UdpFdMsg         *message)
 {
-  static UdpFdMsg init_value = UDP_FD_MSG__INIT;
+  static const UdpFdMsg init_value = UDP_FD_MSG__INIT;
   *message = init_value;
 }
 size_t udp_fd_msg__get_packed_size
@@ -434,13 +452,15 @@ void   udp_fd_msg__free_unpacked
                      (UdpFdMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &udp_fd_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   session_info_msg__init
                      (SessionInfoMsg         *message)
 {
-  static SessionInfoMsg init_value = SESSION_INFO_MSG__INIT;
+  static const SessionInfoMsg init_value = SESSION_INFO_MSG__INIT;
   *message = init_value;
 }
 size_t session_info_msg__get_packed_size
@@ -477,13 +497,15 @@ void   session_info_msg__free_unpacked
                      (SessionInfoMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &session_info_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ban_ip_msg__init
                      (BanIpMsg         *message)
 {
-  static BanIpMsg init_value = BAN_IP_MSG__INIT;
+  static const BanIpMsg init_value = BAN_IP_MSG__INIT;
   *message = init_value;
 }
 size_t ban_ip_msg__get_packed_size
@@ -520,13 +542,15 @@ void   ban_ip_msg__free_unpacked
                      (BanIpMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &ban_ip_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   ban_ip_reply_msg__init
                      (BanIpReplyMsg         *message)
 {
-  static BanIpReplyMsg init_value = BAN_IP_REPLY_MSG__INIT;
+  static const BanIpReplyMsg init_value = BAN_IP_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t ban_ip_reply_msg__get_packed_size
@@ -563,13 +587,15 @@ void   ban_ip_reply_msg__free_unpacked
                      (BanIpReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &ban_ip_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_auth_init_msg__init
                      (SecAuthInitMsg         *message)
 {
-  static SecAuthInitMsg init_value = SEC_AUTH_INIT_MSG__INIT;
+  static const SecAuthInitMsg init_value = SEC_AUTH_INIT_MSG__INIT;
   *message = init_value;
 }
 size_t sec_auth_init_msg__get_packed_size
@@ -606,13 +632,15 @@ void   sec_auth_init_msg__free_unpacked
                      (SecAuthInitMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &sec_auth_init_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_auth_cont_msg__init
                      (SecAuthContMsg         *message)
 {
-  static SecAuthContMsg init_value = SEC_AUTH_CONT_MSG__INIT;
+  static const SecAuthContMsg init_value = SEC_AUTH_CONT_MSG__INIT;
   *message = init_value;
 }
 size_t sec_auth_cont_msg__get_packed_size
@@ -649,13 +677,15 @@ void   sec_auth_cont_msg__free_unpacked
                      (SecAuthContMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &sec_auth_cont_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_auth_reply_msg__init
                      (SecAuthReplyMsg         *message)
 {
-  static SecAuthReplyMsg init_value = SEC_AUTH_REPLY_MSG__INIT;
+  static const SecAuthReplyMsg init_value = SEC_AUTH_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t sec_auth_reply_msg__get_packed_size
@@ -692,13 +722,15 @@ void   sec_auth_reply_msg__free_unpacked
                      (SecAuthReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &sec_auth_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_op_msg__init
                      (SecOpMsg         *message)
 {
-  static SecOpMsg init_value = SEC_OP_MSG__INIT;
+  static const SecOpMsg init_value = SEC_OP_MSG__INIT;
   *message = init_value;
 }
 size_t sec_op_msg__get_packed_size
@@ -735,13 +767,15 @@ void   sec_op_msg__free_unpacked
                      (SecOpMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &sec_op_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   sec_get_pk_msg__init
                      (SecGetPkMsg         *message)
 {
-  static SecGetPkMsg init_value = SEC_GET_PK_MSG__INIT;
+  static const SecGetPkMsg init_value = SEC_GET_PK_MSG__INIT;
   *message = init_value;
 }
 size_t sec_get_pk_msg__get_packed_size
@@ -778,13 +812,15 @@ void   sec_get_pk_msg__free_unpacked
                      (SecGetPkMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &sec_get_pk_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_session_open_msg__init
                      (SecmSessionOpenMsg         *message)
 {
-  static SecmSessionOpenMsg init_value = SECM_SESSION_OPEN_MSG__INIT;
+  static const SecmSessionOpenMsg init_value = SECM_SESSION_OPEN_MSG__INIT;
   *message = init_value;
 }
 size_t secm_session_open_msg__get_packed_size
@@ -821,13 +857,15 @@ void   secm_session_open_msg__free_unpacked
                      (SecmSessionOpenMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &secm_session_open_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_session_close_msg__init
                      (SecmSessionCloseMsg         *message)
 {
-  static SecmSessionCloseMsg init_value = SECM_SESSION_CLOSE_MSG__INIT;
+  static const SecmSessionCloseMsg init_value = SECM_SESSION_CLOSE_MSG__INIT;
   *message = init_value;
 }
 size_t secm_session_close_msg__get_packed_size
@@ -864,13 +902,15 @@ void   secm_session_close_msg__free_unpacked
                      (SecmSessionCloseMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &secm_session_close_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_stats_msg__init
                      (SecmStatsMsg         *message)
 {
-  static SecmStatsMsg init_value = SECM_STATS_MSG__INIT;
+  static const SecmStatsMsg init_value = SECM_STATS_MSG__INIT;
   *message = init_value;
 }
 size_t secm_stats_msg__get_packed_size
@@ -907,13 +947,15 @@ void   secm_stats_msg__free_unpacked
                      (SecmStatsMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &secm_stats_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_session_reply_msg__init
                      (SecmSessionReplyMsg         *message)
 {
-  static SecmSessionReplyMsg init_value = SECM_SESSION_REPLY_MSG__INIT;
+  static const SecmSessionReplyMsg init_value = SECM_SESSION_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t secm_session_reply_msg__get_packed_size
@@ -950,13 +992,15 @@ void   secm_session_reply_msg__free_unpacked
                      (SecmSessionReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &secm_session_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   cookie_int_msg__init
                      (CookieIntMsg         *message)
 {
-  static CookieIntMsg init_value = COOKIE_INT_MSG__INIT;
+  static const CookieIntMsg init_value = COOKIE_INT_MSG__INIT;
   *message = init_value;
 }
 size_t cookie_int_msg__get_packed_size
@@ -993,13 +1037,15 @@ void   cookie_int_msg__free_unpacked
                      (CookieIntMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &cookie_int_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   secm_list_cookies_reply_msg__init
                      (SecmListCookiesReplyMsg         *message)
 {
-  static SecmListCookiesReplyMsg init_value = SECM_LIST_COOKIES_REPLY_MSG__INIT;
+  static const SecmListCookiesReplyMsg init_value = SECM_LIST_COOKIES_REPLY_MSG__INIT;
   *message = init_value;
 }
 size_t secm_list_cookies_reply_msg__get_packed_size
@@ -1036,6 +1082,8 @@ void   secm_list_cookies_reply_msg__free_unpacked
                      (SecmListCookiesReplyMsg *message,
                       ProtobufCAllocator *allocator)
 {
+  if(!message)
+    return;
   assert(message->base.descriptor == &secm_list_cookies_reply_msg__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
@@ -1141,7 +1189,7 @@ const ProtobufCMessageDescriptor fw_port_st__descriptor =
   (ProtobufCMessageInit) fw_port_st__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[32] =
+static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[33] =
 {
   {
     "interim_update_secs",
@@ -1527,6 +1575,18 @@ static const ProtobufCFieldDescriptor group_cfg_st__field_descriptors[32] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "split_dns",
+    41,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_STRING,
+    offsetof(GroupCfgSt, n_split_dns),
+    offsetof(GroupCfgSt, split_dns),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned group_cfg_st__field_indices_by_name[] = {
   12,   /* field[12] = cgroup */
@@ -1558,6 +1618,7 @@ static const unsigned group_cfg_st__field_indices_by_name[] = {
   4,   /* field[4] = routes */
   14,   /* field[14] = rx_per_sec */
   1,   /* field[1] = session_timeout_secs */
+  32,   /* field[32] = split_dns */
   25,   /* field[25] = tunnel_all_dns */
   15,   /* field[15] = tx_per_sec */
   13,   /* field[13] = xml_config_file */
@@ -1567,7 +1628,7 @@ static const ProtobufCIntRange group_cfg_st__number_ranges[3 + 1] =
   { 2, 0 },
   { 10, 2 },
   { 13, 4 },
-  { 0, 32 }
+  { 0, 33 }
 };
 const ProtobufCMessageDescriptor group_cfg_st__descriptor =
 {
@@ -1577,7 +1638,7 @@ const ProtobufCMessageDescriptor group_cfg_st__descriptor =
   "GroupCfgSt",
   "",
   sizeof(GroupCfgSt),
-  32,
+  33,
   group_cfg_st__field_descriptors,
   group_cfg_st__field_indices_by_name,
   3,  group_cfg_st__number_ranges,

@@ -84,7 +84,11 @@ static const struct known_urls_st known_urls[] = {
  * extension to avoid interop issues. Furthermore gnutls does seem to
  * be sending the renegotiation extension which openssl doesn't like (see #193) */
 
-#define WORKAROUND_STR "%NO_SESSION_HASH:%DISABLE_SAFE_RENEGOTIATION"
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+# define WORKAROUND_STR "%NO_SESSION_HASH:%DISABLE_SAFE_RENEGOTIATION"
+#else
+# define WORKAROUND_STR "%DISABLE_SAFE_RENEGOTIATION"
+#endif
 
 /* Consider switching to gperf when this table grows significantly.
  * These tables are used for the custom DTLS cipher negotiation via
@@ -373,6 +377,24 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 				req->user_agent_type = AGENT_OPENCONNECT;
 		} else if (strncasecmp(req->user_agent, "OpenConnect VPN Agent", 21) == 0) {
 			req->user_agent_type = AGENT_OPENCONNECT;
+		} else if (strncasecmp(req->user_agent, "Cisco AnyConnect", 16) == 0) {
+			req->user_agent_type = AGENT_ANYCONNECT;
+		} else if (strncasecmp(req->user_agent, "AnyConnect", 10) == 0) {
+			req->user_agent_type = AGENT_ANYCONNECT;
+		}
+
+		switch (req->user_agent_type) {
+			case AGENT_OPENCONNECT_V3:
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v3 or older");
+				break;
+			case AGENT_OPENCONNECT:
+				oclog(ws, LOG_DEBUG, "Detected OpenConnect v4 or newer");
+				break;
+			case AGENT_ANYCONNECT:
+				oclog(ws, LOG_DEBUG, "Detected Cisco AnyConnect");
+				break;
+			default:
+				oclog(ws, LOG_DEBUG, "Unknown client");
 		}
 		break;
 
@@ -432,7 +454,6 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 	        req->selected_ciphersuite = cand;
 
 		break;
-
 	case HEADER_DTLS12_CIPHERSUITE:
 		if (req->use_psk || !WSCONFIG(ws)->dtls_legacy)
 			break;
@@ -441,8 +462,9 @@ void header_value_check(struct worker_st *ws, struct http_req_st *req)
 		 * anyconnect's openssl fail: https://gitlab.com/gnutls/gnutls/merge_requests/868
 		 */
 #ifdef gnutls_check_version_numeric
-		if (!gnutls_check_version_numeric(3,6,6) &&
-		    (!gnutls_check_version_numeric(3,3,0) || gnutls_check_version_numeric(3,6,0))) {
+		if (req->user_agent_type == AGENT_ANYCONNECT &&
+		    (!gnutls_check_version_numeric(3,6,6) &&
+		    (!gnutls_check_version_numeric(3,3,0) || gnutls_check_version_numeric(3,6,0)))) {
 			break;
 		}
 #endif

@@ -256,6 +256,9 @@
    config.h and <sys/mman.h>. */
 #undef HAVE_MAP_ANONYMOUS
 
+/* have libmaxminddb */
+#undef HAVE_MAXMIND
+
 /* Define to 1 if you have the `memmem' function. */
 #undef HAVE_MEMMEM
 

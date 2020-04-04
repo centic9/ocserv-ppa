@@ -1,3 +1,39 @@
+* Version 0.12.6 (released 2019-12-28)
+- Improved IPv6 support for anyconnect clients. Patch by Leendert van Doorn.
+- The 'split-dns' configuration directive can be used per-user (#229).
+- The max-same-clients=1 configuration option no longer refuses the
+  reconnection of an already connected user (#223).
+- Added openat() to the accepted list of seccomp calls. This allows ocserv
+  to run under certain libcs (#185).
+
+
+* Version 0.12.5 (released 2019-10-16)
+- Fixed issue with FreeBSD tun devices closing (#213).
+- Added configuration option udp-listen-host. This option supports different
+  listen addresses for tcp and udp such as haproxy for tcp, but support dtls
+  at the same time.
+- occtl: fixed json output of show status command. Introduced tests
+  for checking its json output using yajl (#220).
+- occtl: use maxminddb when available.
+
+
+* Version 0.12.4 (released 2019-07-03)
+- Added support for radius access-challenge (multifactor) authentication.
+- Fixed race condition when connect-script and disconnect-script are
+  set, which could potentially cause a crash (#208).
+- Perform quicker cleanup of sessions which their user explicitly
+  disconnected (#210).
+
+
+* Version 0.12.3 (released 2019-03-12)
+- Fixed crash when no DTLS ciphersuite is negotiated.
+- Fixed crash happening arbitrarily depending on handled string
+  sizes (#197).
+- Fixed compatibility issue with GnuTLS 3.3.x (#201).
+- occtl: print the TLS session information, even if the DTLS channel
+  is not established.
+
+
 * Version 0.12.2 (released 2019-01-10)
 - Added support for AES256-SHA legacy cipher. This allows the anyconnect
   clients to use AES256.

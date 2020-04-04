@@ -170,7 +170,7 @@ static int append_group_idx(worker_st * ws, str_st *str, unsigned i)
 
 static int append_group_str(worker_st * ws, str_st *str, const char *group)
 {
-	char temp[128];
+	char temp[256];
 	const char *name;
 	const char *value;
 	unsigned i;
@@ -605,7 +605,10 @@ static int recv_cookie_auth_reply(worker_st * ws)
 	case AUTH__REP__OK:
 		if (socketfd != -1) {
 			ws->tun_fd = socketfd;
-
+			if (tun_claim(ws->tun_fd) != 0) {
+				ret = ERR_AUTH_FAIL;
+				goto cleanup;
+			}
 			if (msg->vname == NULL || msg->config == NULL || msg->user_name == NULL || msg->sid.len != sizeof(ws->sid)) {
 				ret = ERR_AUTH_FAIL;
 				goto cleanup;
